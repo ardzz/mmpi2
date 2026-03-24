@@ -1,0 +1,36 @@
+# Dependencies
+node_modules
+.pnpm-store
+
+# Build outputs (rebuilt inside container)
+dist
+.next
+.turbo
+out
+
+# Coverage / testing
+coverage
+*.lcov
+playwright-report
+test-results
+
+# VCS
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+
+# Docker volumes / misc
+.env
+.env.local
+.env.*.local
+*.log
+logs
+.DS_Store
+Thumbs.db
+
+# AI/tooling metadata
+.sisyphus
+.omc

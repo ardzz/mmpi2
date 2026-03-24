@@ -1,0 +1,32 @@
+{
+  "name": "@mmpi2/worker",
+  "version": "0.0.1",
+  "private": true,
+  "description": "MMPI-2 background worker — NestJS + BullMQ for report generation and async jobs",
+  "scripts": {
+    "dev": "nest start --watch",
+    "build": "nest build",
+    "start": "node dist/main",
+    "start:prod": "node dist/main",
+    "lint": "biome lint ./src",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@mmpi2/reports": "workspace:*",
+    "@nestjs/common": "^10.4.15",
+    "@nestjs/core": "^10.4.15",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "*",
+    "@mmpi2/tooling": "workspace:*",
+    "@nestjs/cli": "^10.4.9",
+    "@nestjs/testing": "^10.4.15",
+    "rimraf": "*",
+    "typescript": "*",
+    "vitest": "^2.1.8"
+  }
+}

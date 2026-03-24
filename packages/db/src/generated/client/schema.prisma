@@ -1,0 +1,586 @@
+// MMPI-2 Platform — Canonical Prisma Schema
+// Source of truth: docs/plans/2026-03-23-mmpi2-erd-design.md
+//
+// Rules:
+//   - Never run `prisma db push` in production — use `prisma migrate deploy`
+//   - All score result sets are immutable after creation
+//   - Published clinical reports are immutable — amendments create new records
+//   - Billing mode defaults to 'disabled'
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ===========================================================================
+// App Settings (singleton)
+// ===========================================================================
+
+model AppSettings {
+  id              String   @id @default(uuid())
+  billingMode     String   @default("disabled") @map("billing_mode") // 'disabled' | 'enabled'
+  updatedByUserId String?  @map("updated_by_user_id")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  updatedBy User? @relation("AppSettingsUpdatedBy", fields: [updatedByUserId], references: [id])
+
+  @@map("app_settings")
+}
+
+// ===========================================================================
+// Identity & Access
+// ===========================================================================
+
+model User {
+  id            String   @id @default(uuid())
+  email         String   @unique
+  fullName      String   @map("full_name")
+  passwordHash  String   @map("password_hash")
+  accountStatus String   @default("active") @map("account_status") // active | suspended | deleted
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  roleAssignments         UserRoleAssignment[]
+  patientProfile          PatientProfile?
+  doctorProfile           DoctorProfile?
+  assessmentRequests      AssessmentRequest[]  @relation("PatientRequests")
+  assignedSessions        ExamSession[]        @relation("DoctorSessions")
+  patientSessions         ExamSession[]        @relation("PatientSessions")
+  authoredClinicalReports ClinicalReport[]     @relation("ClinicalReportAuthoredBy")
+  sessionEventsAsActor    SessionEvent[]       @relation("SessionEventActor")
+  auditLogsAsActor        AuditLog[]           @relation("AuditLogActor")
+  appSettingsUpdates      AppSettings[]        @relation("AppSettingsUpdatedBy")
+
+  @@map("users")
+}
+
+model Role {
+  id          String   @id @default(uuid())
+  roleCode    String   @unique @map("role_code") // patient | doctor | admin | super_admin
+  displayName String   @map("display_name")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  assignments UserRoleAssignment[]
+
+  @@map("roles")
+}
+
+model UserRoleAssignment {
+  id         String   @id @default(uuid())
+  userId     String   @map("user_id")
+  roleId     String   @map("role_id")
+  assignedAt DateTime @default(now()) @map("assigned_at")
+  assignedBy String?  @map("assigned_by")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id])
+
+  @@unique([userId, roleId])
+  @@map("user_role_assignments")
+}
+
+model PatientProfile {
+  id             String   @id @default(uuid())
+  userId         String   @unique @map("user_id")
+  governmentId   String?  @unique @map("government_id")
+  birthDate      DateTime @map("birth_date")
+  sexAtNorming   String   @map("sex_at_norming") // male | female
+  educationLevel String?  @map("education_level")
+  demographics   Json?    @map("demographics")
+  isComplete     Boolean  @default(false) @map("is_complete")
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("patient_profiles")
+}
+
+model DoctorProfile {
+  id                String   @id @default(uuid())
+  userId            String   @unique @map("user_id")
+  licenseNumber     String   @unique @map("license_number")
+  specialty         String?
+  signatureAssetKey String?  @map("signature_asset_key")
+  isActive          Boolean  @default(true) @map("is_active")
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("doctor_profiles")
+}
+
+// ===========================================================================
+// Assessment Reference Data (versioned)
+// ===========================================================================
+
+model AssessmentType {
+  id          String   @id @default(uuid())
+  code        String   @unique // e.g. "MMPI-2"
+  name        String
+  description String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  instrumentVersions InstrumentVersion[]
+  assessmentRequests AssessmentRequest[]
+
+  @@map("assessment_types")
+}
+
+model InstrumentVersion {
+  id               String   @id @default(uuid())
+  assessmentTypeId String   @map("assessment_type_id")
+  versionLabel     String   @map("version_label") // e.g. "1989"
+  isActive         Boolean  @default(false) @map("is_active")
+  effectiveFrom    DateTime @map("effective_from")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  assessmentType        AssessmentType         @relation(fields: [assessmentTypeId], references: [id])
+  questionBankVersions  QuestionBankVersion[]
+  scoringConfigVersions ScoringConfigVersion[]
+  examSessions          ExamSession[]
+
+  @@unique([assessmentTypeId, versionLabel])
+  @@map("instrument_versions")
+}
+
+model QuestionBankVersion {
+  id                  String   @id @default(uuid())
+  instrumentVersionId String   @map("instrument_version_id")
+  versionLabel        String   @map("version_label")
+  checksum            String
+  isActive            Boolean  @default(false) @map("is_active")
+  effectiveFrom       DateTime @map("effective_from")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  instrumentVersion InstrumentVersion  @relation(fields: [instrumentVersionId], references: [id])
+  items             QuestionBankItem[]
+  examSessions      ExamSession[]
+
+  @@unique([instrumentVersionId, versionLabel])
+  @@map("question_bank_versions")
+}
+
+model QuestionBankItem {
+  id                    String  @id @default(uuid())
+  questionBankVersionId String  @map("question_bank_version_id")
+  questionNumber        Int     @map("question_number")
+  itemText              String  @map("item_text")
+  isActive              Boolean @default(true) @map("is_active")
+
+  questionBankVersion QuestionBankVersion @relation(fields: [questionBankVersionId], references: [id])
+  sessionAnswers      SessionAnswer[]
+
+  @@unique([questionBankVersionId, questionNumber])
+  @@map("question_bank_items")
+}
+
+model ScoringConfigVersion {
+  id                  String   @id @default(uuid())
+  instrumentVersionId String   @map("instrument_version_id")
+  versionLabel        String   @map("version_label")
+  checksum            String
+  isActive            Boolean  @default(false) @map("is_active")
+  effectiveFrom       DateTime @map("effective_from")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  instrumentVersion InstrumentVersion @relation(fields: [instrumentVersionId], references: [id])
+  scaleDefinitions  ScaleDefinition[]
+  scaleKeyEntries   ScaleKeyEntry[]
+  normTables        NormTable[]
+  examSessions      ExamSession[]
+  scoreResultSets   ScoreResultSet[]
+
+  @@unique([instrumentVersionId, versionLabel])
+  @@map("scoring_config_versions")
+}
+
+model ScaleDefinition {
+  id                     String   @id @default(uuid())
+  scoringConfigVersionId String   @map("scoring_config_version_id")
+  scaleCode              String   @map("scale_code") // L, F, K, Hs, D, Hy, Pd, Mf, Pa, Pt, Sc, Ma, Si...
+  scaleGroup             String   @map("scale_group") // validity | clinical | content | supplementary
+  displayName            String   @map("display_name")
+  scoreType              String   @map("score_type") // raw | t_score
+  usesKCorrection        Boolean  @default(false) @map("uses_k_correction")
+  kCorrectionWeight      Decimal? @map("k_correction_weight")
+
+  scoringConfigVersion ScoringConfigVersion @relation(fields: [scoringConfigVersionId], references: [id])
+  scaleResults         ScaleResult[]
+
+  @@unique([scoringConfigVersionId, scaleCode])
+  @@map("scale_definitions")
+}
+
+model ScaleKeyEntry {
+  id                     String  @id @default(uuid())
+  scoringConfigVersionId String  @map("scoring_config_version_id")
+  scaleCode              String  @map("scale_code")
+  questionNumber         Int     @map("question_number")
+  keyedAnswer            String  @map("keyed_answer")
+  weight                 Decimal @default(1)
+
+  scoringConfigVersion ScoringConfigVersion @relation(fields: [scoringConfigVersionId], references: [id])
+
+  @@unique([scoringConfigVersionId, scaleCode, questionNumber, keyedAnswer])
+  @@map("scale_key_entries")
+}
+
+model NormTable {
+  id                     String  @id @default(uuid())
+  scoringConfigVersionId String  @map("scoring_config_version_id")
+  normCode               String  @map("norm_code")
+  sexBasis               String  @map("sex_basis")
+  ageBand                String? @map("age_band")
+  description            String?
+
+  scoringConfigVersion ScoringConfigVersion @relation(fields: [scoringConfigVersionId], references: [id])
+  entries              NormTableEntry[]
+  scoreResultSets      ScoreResultSet[]
+
+  @@index([scoringConfigVersionId])
+  @@map("norm_tables")
+}
+
+model NormTableEntry {
+  id          String   @id @default(uuid())
+  normTableId String   @map("norm_table_id")
+  scaleCode   String   @map("scale_code")
+  rawScore    Decimal  @map("raw_score")
+  tScore      Decimal  @map("t_score")
+  percentile  Decimal?
+
+  normTable NormTable @relation(fields: [normTableId], references: [id], onDelete: Cascade)
+
+  @@unique([normTableId, scaleCode, rawScore])
+  @@map("norm_table_entries")
+}
+
+// ===========================================================================
+// Assessment Workflow
+// ===========================================================================
+
+model AssessmentRequest {
+  id                 String   @id @default(uuid())
+  patientUserId      String   @map("patient_user_id")
+  assessmentTypeId   String   @map("assessment_type_id")
+  requestStatus      String   @default("draft") @map("request_status")
+  paymentRequirement String   @default("optional") @map("payment_requirement")
+  paymentSatisfied   Boolean  @default(false) @map("payment_satisfied")
+  activePaymentId    String?  @unique @map("active_payment_id")
+  purpose            String?
+  requestedAt        DateTime @default(now()) @map("requested_at")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  patient        User           @relation("PatientRequests", fields: [patientUserId], references: [id])
+  assessmentType AssessmentType @relation(fields: [assessmentTypeId], references: [id])
+  activePayment  Payment?       @relation("RequestActivePayment", fields: [activePaymentId], references: [id])
+  payments       Payment[]      @relation("RequestPayments")
+  examSession    ExamSession?
+
+  @@index([patientUserId, requestStatus])
+  @@index([paymentRequirement, paymentSatisfied])
+  @@map("assessment_requests")
+}
+
+model ExamSession {
+  id                     String    @id @default(uuid())
+  assessmentRequestId    String    @unique @map("assessment_request_id")
+  patientUserId          String    @map("patient_user_id")
+  doctorUserId           String    @map("doctor_user_id")
+  instrumentVersionId    String    @map("instrument_version_id")
+  questionBankVersionId  String    @map("question_bank_version_id")
+  scoringConfigVersionId String    @map("scoring_config_version_id")
+  sessionStatus          String    @default("draft") @map("session_status")
+  demographicsSnapshot   Json?     @map("demographics_snapshot")
+  approvedAt             DateTime? @map("approved_at")
+  startedAt              DateTime? @map("started_at")
+  submittedAt            DateTime? @map("submitted_at")
+  completionPercentage   Int       @default(0) @map("completion_percentage")
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+
+  assessmentRequest    AssessmentRequest    @relation(fields: [assessmentRequestId], references: [id])
+  patient              User                 @relation("PatientSessions", fields: [patientUserId], references: [id])
+  doctor               User                 @relation("DoctorSessions", fields: [doctorUserId], references: [id])
+  instrumentVersion    InstrumentVersion    @relation(fields: [instrumentVersionId], references: [id])
+  questionBankVersion  QuestionBankVersion  @relation(fields: [questionBankVersionId], references: [id])
+  scoringConfigVersion ScoringConfigVersion @relation(fields: [scoringConfigVersionId], references: [id])
+  answers              SessionAnswer[]
+  sessionEvents        SessionEvent[]
+  scoreResultSets      ScoreResultSet[]
+  notificationEvents   NotificationEvent[]
+
+  @@index([patientUserId, sessionStatus])
+  @@index([doctorUserId, sessionStatus])
+  @@map("exam_sessions")
+}
+
+model SessionAnswer {
+  id                 String    @id @default(uuid())
+  examSessionId      String    @map("exam_session_id")
+  questionBankItemId String    @map("question_bank_item_id")
+  questionNumber     Int       @map("question_number")
+  answerState        String    @map("answer_state")
+  answeredAt         DateTime? @map("answered_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  examSession      ExamSession      @relation(fields: [examSessionId], references: [id], onDelete: Cascade)
+  questionBankItem QuestionBankItem @relation(fields: [questionBankItemId], references: [id])
+
+  @@unique([examSessionId, questionNumber])
+  @@unique([examSessionId, questionBankItemId])
+  @@index([examSessionId, questionNumber])
+  @@map("session_answers")
+}
+
+model SessionEvent {
+  id            String   @id @default(uuid())
+  examSessionId String   @map("exam_session_id")
+  fromStatus    String?  @map("from_status")
+  toStatus      String   @map("to_status")
+  eventType     String   @map("event_type")
+  payload       Json?
+  occurredAt    DateTime @default(now()) @map("occurred_at")
+  actorUserId   String?  @map("actor_user_id")
+
+  examSession ExamSession @relation(fields: [examSessionId], references: [id], onDelete: Cascade)
+  actor       User?       @relation("SessionEventActor", fields: [actorUserId], references: [id])
+
+  @@index([examSessionId, occurredAt])
+  @@map("session_events")
+}
+
+// ===========================================================================
+// Billing
+// ===========================================================================
+
+model Payment {
+  id                  String    @id @default(uuid())
+  assessmentRequestId String    @map("assessment_request_id")
+  providerCode        String    @map("provider_code")
+  providerReferenceId String?   @map("provider_reference_id")
+  currency            String
+  amount              Decimal
+  status              String
+  checkoutUrl         String?   @map("checkout_url")
+  providerMetadata    Json?     @map("provider_metadata")
+  expiresAt           DateTime? @map("expires_at")
+  paidAt              DateTime? @map("paid_at")
+  createdAt           DateTime  @default(now()) @map("created_at")
+  updatedAt           DateTime  @updatedAt @map("updated_at")
+
+  assessmentRequest AssessmentRequest  @relation("RequestPayments", fields: [assessmentRequestId], references: [id], onDelete: Cascade)
+  activeForRequest  AssessmentRequest? @relation("RequestActivePayment")
+  events            PaymentEvent[]
+
+  @@unique([providerCode, providerReferenceId])
+  @@index([assessmentRequestId, status])
+  @@map("payments")
+}
+
+model PaymentEvent {
+  id                String   @id @default(uuid())
+  paymentId         String   @map("payment_id")
+  eventType         String   @map("event_type")
+  providerEventId   String?  @map("provider_event_id")
+  providerStatus    String?  @map("provider_status")
+  signatureVerified Boolean  @default(false) @map("signature_verified")
+  amount            Decimal?
+  idempotencyKey    String   @unique @map("idempotency_key")
+  payload           Json?
+  occurredAt        DateTime @map("occurred_at")
+  recordedAt        DateTime @default(now()) @map("recorded_at")
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@unique([paymentId, providerEventId])
+  @@index([paymentId, occurredAt])
+  @@map("payment_events")
+}
+
+// ===========================================================================
+// Scoring Results (immutable)
+// ===========================================================================
+
+model ScoreResultSet {
+  id                     String   @id @default(uuid())
+  examSessionId          String   @map("exam_session_id")
+  scoringConfigVersionId String   @map("scoring_config_version_id")
+  normTableId            String   @map("norm_table_id")
+  supersedesResultSetId  String?  @map("supersedes_result_set_id")
+  scoringEngineVersion   String   @map("scoring_engine_version")
+  inputHash              String   @map("input_hash")
+  isValidProtocol        Boolean  @map("is_valid_protocol")
+  scoredAt               DateTime @default(now()) @map("scored_at")
+  status                 String   @default("completed")
+
+  examSession          ExamSession          @relation(fields: [examSessionId], references: [id], onDelete: Cascade)
+  scoringConfigVersion ScoringConfigVersion @relation(fields: [scoringConfigVersionId], references: [id])
+  normTable            NormTable            @relation(fields: [normTableId], references: [id])
+  supersedes           ScoreResultSet?      @relation("ResultSetSupersedes", fields: [supersedesResultSetId], references: [id])
+  supersededBy         ScoreResultSet[]     @relation("ResultSetSupersedes")
+  scaleResults         ScaleResult[]
+  validityFlags        ValidityFlag[]
+  criticalItemFlags    CriticalItemFlag[]
+  clinicalReports      ClinicalReport[]
+  reportDocuments      ReportDocument[]
+
+  @@index([examSessionId, scoredAt])
+  @@map("score_result_sets")
+}
+
+model ScaleResult {
+  id                String   @id @default(uuid())
+  scoreResultSetId  String   @map("score_result_set_id")
+  scaleDefinitionId String   @map("scale_definition_id")
+  scaleCode         String   @map("scale_code")
+  rawScore          Decimal  @map("raw_score")
+  correctedScore    Decimal? @map("corrected_score")
+  tScore            Decimal? @map("t_score")
+  percentile        Decimal?
+
+  scoreResultSet  ScoreResultSet  @relation(fields: [scoreResultSetId], references: [id], onDelete: Cascade)
+  scaleDefinition ScaleDefinition @relation(fields: [scaleDefinitionId], references: [id])
+
+  @@unique([scoreResultSetId, scaleCode])
+  @@index([scoreResultSetId, scaleCode])
+  @@map("scale_results")
+}
+
+model ValidityFlag {
+  id               String  @id @default(uuid())
+  scoreResultSetId String  @map("score_result_set_id")
+  flagCode         String  @map("flag_code")
+  severity         String
+  description      String?
+
+  scoreResultSet ScoreResultSet @relation(fields: [scoreResultSetId], references: [id], onDelete: Cascade)
+
+  @@index([scoreResultSetId, flagCode])
+  @@map("validity_flags")
+}
+
+model CriticalItemFlag {
+  id               String  @id @default(uuid())
+  scoreResultSetId String  @map("score_result_set_id")
+  flagCode         String  @map("flag_code")
+  sourceGroup      String  @map("source_group")
+  description      String?
+
+  scoreResultSet ScoreResultSet @relation(fields: [scoreResultSetId], references: [id], onDelete: Cascade)
+
+  @@map("critical_item_flags")
+}
+
+// ===========================================================================
+// Clinical Reports
+// ===========================================================================
+
+model ClinicalReport {
+  id                    String    @id @default(uuid())
+  scoreResultSetId      String    @map("score_result_set_id")
+  authoredByUserId      String    @map("authored_by_user_id")
+  reportStatus          String    @default("draft") @map("report_status")
+  interpretationSummary String?   @map("interpretation_summary")
+  narrative             String?
+  recommendations       String?
+  finalizedAt           DateTime? @map("finalized_at")
+  publishedAt           DateTime? @map("published_at")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+
+  scoreResultSet ScoreResultSet            @relation(fields: [scoreResultSetId], references: [id])
+  authoredBy     User                      @relation("ClinicalReportAuthoredBy", fields: [authoredByUserId], references: [id])
+  amendments     ClinicalReportAmendment[] @relation("ReportAmendments")
+  amendedFrom    ClinicalReportAmendment[] @relation("ReportAmendedFrom")
+  signature      ReportSignature?
+  documents      ReportDocument[]
+
+  @@map("clinical_reports")
+}
+
+model ClinicalReportAmendment {
+  id                  String   @id @default(uuid())
+  clinicalReportId    String   @map("clinical_report_id")
+  amendedFromReportId String   @map("amended_from_report_id")
+  amendmentReason     String   @map("amendment_reason")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  clinicalReport    ClinicalReport @relation("ReportAmendments", fields: [clinicalReportId], references: [id], onDelete: Cascade)
+  amendedFromReport ClinicalReport @relation("ReportAmendedFrom", fields: [amendedFromReportId], references: [id])
+
+  @@index([clinicalReportId, createdAt])
+  @@map("clinical_report_amendments")
+}
+
+model ReportSignature {
+  id               String   @id @default(uuid())
+  clinicalReportId String   @unique @map("clinical_report_id")
+  storageKey       String   @map("storage_key")
+  fileHash         String   @map("file_hash")
+  signedAt         DateTime @map("signed_at")
+
+  clinicalReport ClinicalReport @relation(fields: [clinicalReportId], references: [id], onDelete: Cascade)
+
+  @@map("report_signatures")
+}
+
+model ReportDocument {
+  id               String   @id @default(uuid())
+  clinicalReportId String   @map("clinical_report_id")
+  scoreResultSetId String   @map("score_result_set_id")
+  documentType     String   @map("document_type")
+  templateVersion  String   @map("template_version")
+  storageKey       String   @map("storage_key")
+  fileHash         String   @map("file_hash")
+  generatedAt      DateTime @default(now()) @map("generated_at")
+
+  clinicalReport ClinicalReport @relation(fields: [clinicalReportId], references: [id], onDelete: Cascade)
+  scoreResultSet ScoreResultSet @relation(fields: [scoreResultSetId], references: [id])
+
+  @@index([clinicalReportId, generatedAt])
+  @@map("report_documents")
+}
+
+// ===========================================================================
+// Notifications & Audit
+// ===========================================================================
+
+model NotificationEvent {
+  id             String   @id @default(uuid())
+  examSessionId  String   @map("exam_session_id")
+  eventType      String   @map("event_type")
+  channel        String
+  deliveryStatus String   @map("delivery_status")
+  occurredAt     DateTime @default(now()) @map("occurred_at")
+
+  examSession ExamSession @relation(fields: [examSessionId], references: [id], onDelete: Cascade)
+
+  @@index([examSessionId, occurredAt])
+  @@map("notification_events")
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  actorUserId String?  @map("actor_user_id")
+  entityType  String   @map("entity_type")
+  entityId    String   @map("entity_id")
+  action      String
+  beforeData  Json?    @map("before_data")
+  afterData   Json?    @map("after_data")
+  occurredAt  DateTime @default(now()) @map("occurred_at")
+
+  actor User? @relation("AuditLogActor", fields: [actorUserId], references: [id])
+
+  @@index([entityType, entityId, occurredAt])
+  @@map("audit_logs")
+}

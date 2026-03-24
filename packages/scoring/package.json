@@ -1,0 +1,30 @@
+{
+  "name": "@mmpi2/scoring",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Pure deterministic MMPI-2 scoring engine — zero framework dependencies",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "lint": "biome lint ./src",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --coverage",
+    "test:watch": "vitest",
+    "clean": "rimraf dist"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "*",
+    "@mmpi2/tooling": "workspace:*",
+    "@vitest/coverage-v8": "^2.1.8",
+    "rimraf": "*",
+    "typescript": "*",
+    "vitest": "^2.1.8"
+  }
+}
