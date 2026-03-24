@@ -1,0 +1,38 @@
+{
+  "name": "@mmpi2/ui",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Shared UI components, design system primitives — shadcn/ui based",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "lint": "biome lint ./src",
+    "typecheck": "tsc --noEmit",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.473.0",
+    "tailwind-merge": "^2.6.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "*",
+    "@mmpi2/tooling": "workspace:*",
+    "@types/react": "^19.0.0",
+    "react": "^19.0.0",
+    "rimraf": "*",
+    "typescript": "*"
+  },
+  "peerDependencies": {
+    "react": "^18.3.1 || ^19.0.0",
+    "react-dom": "^18.3.1 || ^19.0.0"
+  }
+}

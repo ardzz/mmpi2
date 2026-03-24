@@ -1,0 +1,36 @@
+{
+  "name": "@mmpi2/web",
+  "version": "0.0.1",
+  "private": true,
+  "description": "MMPI-2 platform web client — Next.js App Router",
+  "scripts": {
+    "dev": "next dev --port 3000",
+    "build": "next build",
+    "start": "next start",
+    "lint": "biome lint ./src",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests",
+    "test:e2e": "playwright test",
+    "clean": "rimraf .next out"
+  },
+  "dependencies": {
+    "lucide-react": "^0.473.0",
+    "next": "^15.1.6",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "*",
+    "@mmpi2/tooling": "workspace:*",
+    "@tailwindcss/postcss": "^4.2.2",
+    "@types/node": "^22.19.15",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "autoprefixer": "^10.4.27",
+    "postcss": "^8.5.8",
+    "rimraf": "*",
+    "tailwindcss": "^4.2.2",
+    "typescript": "*",
+    "vitest": "^2.1.8"
+  }
+}

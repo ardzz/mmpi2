@@ -1,0 +1,14 @@
+{
+  "extends": "../tooling/tsconfig.package.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "jsx": "react",
+    "allowUmdGlobalAccess": true,
+    "baseUrl": ".",
+    "paths": {
+      "@react-pdf/renderer": ["./src/types/react-pdf-shim.d.ts"]
+    }
+  },
+  "include": ["src/**/*"]
+}
