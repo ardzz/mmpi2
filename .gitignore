@@ -45,6 +45,7 @@ test-results
 
 # AI
 .sisyphus
+.omc/prompts
 
 # docs
 docs
