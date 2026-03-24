@@ -1,0 +1,32 @@
+{
+  "name": "@mmpi2/contracts",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Shared Zod contracts, DTO shapes, API request/response types, state machine rules",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "lint": "biome lint ./src",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "*",
+    "@mmpi2/tooling": "workspace:*",
+    "rimraf": "*",
+    "typescript": "*",
+    "vitest": "^2.1.8"
+  }
+}

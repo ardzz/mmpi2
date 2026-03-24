@@ -1,0 +1,18 @@
+{
+  "extends": "../../packages/tooling/tsconfig.nestjs.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@mmpi2/auth": ["../../packages/auth/dist/index.d.ts"],
+      "@mmpi2/config": ["../../packages/config/dist/index.d.ts"],
+      "@mmpi2/contracts": ["../../packages/contracts/dist/index.d.ts"],
+      "@mmpi2/scoring": ["../../packages/scoring/dist/index.d.ts"],
+      "@mmpi2/reports": ["../../packages/reports/dist/index.d.ts"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
+}
