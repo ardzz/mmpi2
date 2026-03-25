@@ -1,7 +1,53 @@
 import Link from 'next/link';
 import { ArrowLeft, Lock, CreditCard } from 'lucide-react';
+import { fetchApiAsAdmin } from '../../../lib/api-client';
+import { redirect } from 'next/navigation';
+import type { AppBillingSettings } from '@mmpi2/contracts';
 
-export default function PaymentPage() {
+export default async function PaymentPage({ searchParams }: { searchParams: Promise<{ requestId?: string }> }) {
+  const resolvedParams = await searchParams;
+  const requestId = resolvedParams.requestId;
+
+  if (!requestId) {
+    redirect('/patient');
+  }
+
+  let billingSettings: AppBillingSettings | null = null;
+  try {
+    billingSettings = await fetchApiAsAdmin<AppBillingSettings>('/workflow/billing/settings');
+  } catch (error) {
+    console.error('Failed to load billing settings:', error);
+  }
+
+  const amount = billingSettings?.defaultAmount ?? 0;
+  const currency = billingSettings?.defaultCurrency ?? 'IDR';
+  const formattedAmount = new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency,
+    maximumFractionDigits: 0,
+  }).format(amount);
+
+  async function payAndApprove() {
+    'use server';
+    
+    try {
+      await fetchApiAsAdmin(`/workflow/requests/${requestId}/payments/confirm`, {
+        method: 'POST',
+        body: JSON.stringify({ adminNote: 'Auto-confirmed via dev bypass' }),
+      });
+      
+      await fetchApiAsAdmin(`/workflow/requests/${requestId}/review`, {
+        method: 'PATCH',
+        body: JSON.stringify({ decision: 'approved', adminNote: 'Auto-approved via dev bypass' }),
+      });
+    } catch (error) {
+      console.error('Failed to process payment/approval:', error);
+      redirect('/patient/payment/failed');
+    }
+    
+    redirect(`/patient/session/ready?requestId=${requestId}`);
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -31,19 +77,13 @@ export default function PaymentPage() {
               </div>
             </div>
 
-            <form className="space-y-6">
-              {/* Payment Details Form */}
+            <form action={payAndApprove} className="space-y-6">
               <div className="space-y-4">
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-[var(--color-on-surface)] mb-1">
                     Name on card
                   </label>
-                  <input
-                    type="text"
-                    id="name"
-                    className="block w-full appearance-none rounded-[var(--radius-md)] bg-[var(--color-surface)] px-3 py-2.5 text-[var(--color-on-surface)] border border-[var(--color-outline-variant)]/15 focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 sm:text-sm"
-                    placeholder="Alex Doe"
-                  />
+                  <input type="text" id="name" defaultValue="Alex Doe" className="block w-full appearance-none rounded-[var(--radius-md)] bg-[var(--color-surface)] px-3 py-2.5 text-[var(--color-on-surface)] border border-[var(--color-outline-variant)]/15 focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 sm:text-sm" placeholder="Alex Doe" />
                 </div>
 
                 <div>
@@ -54,12 +94,7 @@ export default function PaymentPage() {
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                       <CreditCard className="h-5 w-5 text-[var(--color-on-surface-variant)]" />
                     </div>
-                    <input
-                      type="text"
-                      id="card"
-                      className="block w-full appearance-none rounded-[var(--radius-md)] bg-[var(--color-surface)] pl-10 pr-3 py-2.5 text-[var(--color-on-surface)] border border-[var(--color-outline-variant)]/15 focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 sm:text-sm"
-                      placeholder="0000 0000 0000 0000"
-                    />
+                    <input type="text" id="card" defaultValue="4242 4242 4242 4242" className="block w-full appearance-none rounded-[var(--radius-md)] bg-[var(--color-surface)] pl-10 pr-3 py-2.5 text-[var(--color-on-surface)] border border-[var(--color-outline-variant)]/15 focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 sm:text-sm" placeholder="0000 0000 0000 0000" />
                   </div>
                 </div>
 
@@ -68,40 +103,24 @@ export default function PaymentPage() {
                     <label htmlFor="expiry" className="block text-sm font-medium text-[var(--color-on-surface)] mb-1">
                       Expiry date
                     </label>
-                    <input
-                      type="text"
-                      id="expiry"
-                      className="block w-full appearance-none rounded-[var(--radius-md)] bg-[var(--color-surface)] px-3 py-2.5 text-[var(--color-on-surface)] border border-[var(--color-outline-variant)]/15 focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 sm:text-sm"
-                      placeholder="MM/YY"
-                    />
+                    <input type="text" id="expiry" defaultValue="12/34" className="block w-full appearance-none rounded-[var(--radius-md)] bg-[var(--color-surface)] px-3 py-2.5 text-[var(--color-on-surface)] border border-[var(--color-outline-variant)]/15 focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 sm:text-sm" placeholder="MM/YY" />
                   </div>
                   <div>
                     <label htmlFor="cvc" className="block text-sm font-medium text-[var(--color-on-surface)] mb-1">
                       CVC
                     </label>
-                    <input
-                      type="text"
-                      id="cvc"
-                      className="block w-full appearance-none rounded-[var(--radius-md)] bg-[var(--color-surface)] px-3 py-2.5 text-[var(--color-on-surface)] border border-[var(--color-outline-variant)]/15 focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 sm:text-sm"
-                      placeholder="123"
-                    />
+                    <input type="text" id="cvc" defaultValue="123" className="block w-full appearance-none rounded-[var(--radius-md)] bg-[var(--color-surface)] px-3 py-2.5 text-[var(--color-on-surface)] border border-[var(--color-outline-variant)]/15 focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 sm:text-sm" placeholder="123" />
                   </div>
                 </div>
               </div>
 
               <div className="pt-8 flex flex-col sm:flex-row gap-4 sm:justify-end">
-                <Link 
-                  href="/patient/payment/failed"
-                  className="inline-flex justify-center rounded-[var(--radius-md)] bg-[var(--color-surface-lowest)] border border-[var(--color-outline-variant)]/15 px-6 py-2.5 text-sm font-semibold text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-low)] hover:text-[var(--color-on-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] transition-all"
-                >
-                  Test Failure
+                <Link href="/patient" className="inline-flex justify-center rounded-[var(--radius-md)] bg-[var(--color-surface-lowest)] border border-[var(--color-outline-variant)]/15 px-6 py-2.5 text-sm font-semibold text-[var(--color-on-surface-variant)] hover:bg-[var(--color-surface-low)] hover:text-[var(--color-on-surface)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] transition-all">
+                  Cancel
                 </Link>
-                <Link 
-                  href="/patient/status/awaiting-approval"
-                  className="inline-flex justify-center items-center gap-2 rounded-[var(--radius-md)] bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-primary-container)] px-8 py-2.5 text-sm font-semibold text-white shadow-[var(--shadow-ambient)] hover:from-[var(--color-primary-container)] hover:to-[var(--color-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] transition-all"
-                >
-                  Pay $150.00
-                </Link>
+                <button type="submit" className="inline-flex justify-center items-center gap-2 rounded-[var(--radius-md)] bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-primary-container)] px-8 py-2.5 text-sm font-semibold text-white shadow-[var(--shadow-ambient)] hover:from-[var(--color-primary-container)] hover:to-[var(--color-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] transition-all">
+                  Pay {formattedAmount}
+                </button>
               </div>
             </form>
           </div>
@@ -119,18 +138,20 @@ export default function PaymentPage() {
                   <p className="text-sm font-medium text-[var(--color-on-surface)]">MMPI-2 Assessment</p>
                   <p className="text-xs text-[var(--color-on-surface-variant)] mt-0.5">Standard Clinical Evaluation</p>
                 </div>
-                <span className="text-sm font-medium text-[var(--color-on-surface)]">$150.00</span>
+                <span className="text-sm font-medium text-[var(--color-on-surface)]">{formattedAmount}</span>
               </div>
               
               <div className="pt-4 border-t border-[var(--color-outline-variant)]/15 flex justify-between items-center">
                 <span className="font-semibold text-[var(--color-on-surface)]">Total</span>
-                <span className="font-display font-semibold text-lg text-[var(--color-primary)]">$150.00</span>
+                <span className="font-display font-semibold text-lg text-[var(--color-primary)]">{formattedAmount}</span>
               </div>
             </div>
 
             <div className="mt-6 pt-6 border-t border-[var(--color-outline-variant)]/15">
-              <p className="text-xs text-[var(--color-on-surface-variant)] text-center">
-                By completing this payment, you agree to our Terms of Service and Privacy Policy. Refunds are subject to clinical approval.
+              <p className="text-xs text-[var(--color-on-surface-variant)] leading-relaxed">
+                Billing is currently routed through the persisted backend billing configuration. In this
+                development flow, payment confirmation and approval are completed through an admin
+                shortcut so you can continue exercising the full assessment workflow.
               </p>
             </div>
           </div>

@@ -14,6 +14,7 @@
     "lint:fix": "turbo lint:fix",
     "typecheck": "turbo typecheck",
     "test": "turbo test",
+    "test:db": "node scripts/run-api-db-integration.mjs",
     "test:e2e": "turbo test:e2e",
     "format": "biome format --write .",
     "clean": "turbo clean && rimraf node_modules",

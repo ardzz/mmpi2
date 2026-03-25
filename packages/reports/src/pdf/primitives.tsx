@@ -124,6 +124,8 @@ export function Section({
   title,
   children,
 }: SectionProps): ReactElement {
+  void React;
+
   return (
     <View style={reportStyles.sectionContainer}>
       <Text style={reportStyles.sectionTitle}>{title}</Text>
@@ -143,6 +145,8 @@ interface KeyValueGridProps {
 }
 
 export function KeyValueGrid({ items }: KeyValueGridProps): ReactElement {
+  void React;
+
   return (
     <View style={reportStyles.keyValueGrid}>
       {items.map((item) => (
@@ -160,6 +164,8 @@ interface ScaleTableProps {
 }
 
 export function ScaleTable({ rows }: ScaleTableProps): ReactElement {
+  void React;
+
   return (
     <View style={reportStyles.scaleTable}>
       <View style={reportStyles.scaleHeaderRow}>

@@ -40,6 +40,36 @@ export class ReportController {
     return this.reportService.getReportStateForDoctor(sessionId, this.getCurrentDoctorIdOrThrow(user));
   }
 
+  @RequireMinRole(UserRole.PATIENT)
+  @Get('patient/documents')
+  getPublishedDocumentsForPatient(@CurrentUser() user: AuthenticatedUserContext | undefined) {
+    return this.reportService.listPublishedDocumentsForPatient(this.getCurrentPatientIdOrThrow(user));
+  }
+
+  @RequireMinRole(UserRole.PATIENT)
+  @Get('patient/documents/:reportId')
+  getPublishedDocumentDetailForPatient(
+    @CurrentUser() user: AuthenticatedUserContext | undefined,
+    @Param('reportId') reportId: string,
+  ) {
+    return this.reportService.getPublishedDocumentDetailForPatient(
+      this.getCurrentPatientIdOrThrow(user),
+      reportId,
+    );
+  }
+
+  @RequireMinRole(UserRole.PATIENT)
+  @Get('patient/documents/:reportId/download')
+  getPublishedDocumentDownloadForPatient(
+    @CurrentUser() user: AuthenticatedUserContext | undefined,
+    @Param('reportId') reportId: string,
+  ) {
+    return this.reportService.getPublishedDocumentDownloadForPatient(
+      this.getCurrentPatientIdOrThrow(user),
+      reportId,
+    );
+  }
+
   @RequireMinRole(UserRole.DOCTOR)
   @Put('sessions/:sessionId/report/draft')
   saveDraft(
@@ -144,6 +174,19 @@ export class ReportController {
     const hasDoctorRole = user.roles.includes(UserRole.DOCTOR);
     if (!hasDoctorRole) {
       throw new UnauthorizedException('Doctor role is required for report authoring actions.');
+    }
+
+    return user.userId;
+  }
+
+  private getCurrentPatientIdOrThrow(user: AuthenticatedUserContext | undefined): string {
+    if (user === undefined) {
+      throw new UnauthorizedException('Authentication required.');
+    }
+
+    const hasPatientRole = user.roles.includes(UserRole.PATIENT);
+    if (!hasPatientRole) {
+      throw new UnauthorizedException('Patient role is required for patient document access.');
     }
 
     return user.userId;

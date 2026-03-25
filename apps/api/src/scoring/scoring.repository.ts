@@ -13,7 +13,7 @@ export interface ScoringResultSetSnapshot {
 }
 
 export abstract class ScoringRepository {
-  abstract createResultSetSnapshot(snapshot: ScoringResultSetSnapshot): ScoringResultSetSnapshot;
-  abstract findLatestResultSetBySessionId(sessionId: string): ScoringResultSetSnapshot | null;
-  abstract listResultSetsBySessionId(sessionId: string): ScoringResultSetSnapshot[];
+  abstract createResultSetSnapshot(snapshot: ScoringResultSetSnapshot): Promise<ScoringResultSetSnapshot>;
+  abstract findLatestResultSetBySessionId(sessionId: string): Promise<ScoringResultSetSnapshot | null>;
+  abstract listResultSetsBySessionId(sessionId: string): Promise<ScoringResultSetSnapshot[]>;
 }

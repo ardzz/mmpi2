@@ -126,3 +126,54 @@ export const AmendReportSchema = z.object({
 });
 
 export type AmendReportDto = z.infer<typeof AmendReportSchema>;
+
+// ---------------------------------------------------------------------------
+// Patient-facing report read models
+// ---------------------------------------------------------------------------
+
+export const PatientDocumentSummarySchema = z.object({
+  id: z.string().uuid(),
+  examSessionId: z.string().uuid(),
+  title: z.string().min(1).max(200),
+  documentType: z.literal('clinical_report'),
+  reportStatus: ClinicalReportStatusSchema,
+  publishedAt: z.coerce.date().nullable(),
+  authorUserId: z.string().uuid(),
+  authorName: z.string().min(1),
+  hasDownload: z.boolean(),
+});
+
+export type PatientDocumentSummary = z.infer<typeof PatientDocumentSummarySchema>;
+
+export const PatientDocumentDetailSchema = z.object({
+  id: z.string().uuid(),
+  examSessionId: z.string().uuid(),
+  title: z.string().min(1).max(200),
+  documentType: z.literal('clinical_report'),
+  reportStatus: ClinicalReportStatusSchema,
+  publishedAt: z.coerce.date().nullable(),
+  authorUserId: z.string().uuid(),
+  authorName: z.string().min(1),
+  interpretationSummary: z.string().nullable(),
+  narrative: z.string().nullable(),
+  supplementalObservations: z.record(z.unknown()).nullable(),
+  amendedFromId: z.string().uuid().nullable(),
+  hasDownload: z.boolean(),
+});
+
+export type PatientDocumentDetail = z.infer<typeof PatientDocumentDetailSchema>;
+
+export const PatientDocumentDownloadSchema = z.object({
+  reportId: z.string().uuid(),
+  documentId: z.string().uuid(),
+  documentType: z.string().min(1),
+  fileName: z.string().min(1),
+  contentType: z.string().min(1),
+  byteLength: z.number().int().nonnegative(),
+  checksumSha256: z.string().min(1),
+  generatedAt: z.coerce.date(),
+  storageKey: z.string().min(1),
+  bodyBase64: z.string().min(1),
+});
+
+export type PatientDocumentDownload = z.infer<typeof PatientDocumentDownloadSchema>;

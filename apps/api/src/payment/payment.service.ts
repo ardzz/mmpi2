@@ -59,21 +59,21 @@ export class PaymentService {
     private readonly xenditGateway: XenditGateway,
   ) {}
 
-  getBillingSettings(): AppBillingSettings {
+  async getBillingSettings(): Promise<AppBillingSettings> {
     return this.repository.getBillingSettings();
   }
 
-  updateBillingMode(billingMode: BillingModeType): AppBillingSettings {
-    const currentSettings = this.repository.getBillingSettings();
+  async updateBillingMode(billingMode: BillingModeType): Promise<AppBillingSettings> {
+    const currentSettings = await this.repository.getBillingSettings();
     return this.repository.saveBillingSettings({
       ...currentSettings,
       billingMode,
     });
   }
 
-  createBillingPlanForNewRequest(requestId: string): RequestBillingPlan {
-    const { billingMode } = this.repository.getBillingSettings();
-    this.repository.saveRequestBillingModeSnapshot(requestId, billingMode);
+  async createBillingPlanForNewRequest(requestId: string): Promise<RequestBillingPlan> {
+    const { billingMode } = await this.repository.getBillingSettings();
+    await this.repository.saveRequestBillingModeSnapshot(requestId, billingMode);
 
     if (billingMode === BillingMode.DISABLED) {
       return {
@@ -90,6 +90,10 @@ export class PaymentService {
       paymentSatisfied: false,
       initialRequestStatus: AssessmentRequestStatus.AWAITING_PAYMENT,
     };
+  }
+
+  async saveRequestBillingModeSnapshot(requestId: string, billingMode: BillingModeType): Promise<void> {
+    await this.repository.saveRequestBillingModeSnapshot(requestId, billingMode);
   }
 
   async createPaymentForRequest(request: AssessmentRequest): Promise<RequestPaymentCreationResult> {
@@ -110,12 +114,12 @@ export class PaymentService {
       );
     }
 
-    const billingMode = this.getOrInferRequestBillingMode(request.id);
+    const billingMode = await this.getOrInferRequestBillingMode(request.id);
     const gateway = this.selectGateway(billingMode);
-    const currentSettings = this.repository.getBillingSettings();
+    const currentSettings = await this.repository.getBillingSettings();
 
     const existingPendingPayment = request.activePaymentId
-      ? this.repository.findPaymentById(request.activePaymentId)
+      ? await this.repository.findPaymentById(request.activePaymentId)
       : null;
 
     if (
@@ -139,7 +143,7 @@ export class PaymentService {
       throw new ConflictException('Billing is disabled for this request snapshot. No payment row is created.');
     }
 
-    const payment = this.repository.savePayment({
+    const payment = await this.repository.savePayment({
       id: paymentId,
       assessmentRequestId: request.id,
       providerCode: gatewayResult.providerCode,
@@ -155,7 +159,7 @@ export class PaymentService {
       updatedAt: now,
     });
 
-    this.repository.appendPaymentEvent({
+    await this.repository.appendPaymentEvent({
       id: randomUUID(),
       paymentId: payment.id,
       eventType: 'charge_created',
@@ -177,12 +181,12 @@ export class PaymentService {
     };
   }
 
-  confirmPaymentManually(request: AssessmentRequest, adminNote: string | null): Payment {
+  async confirmPaymentManually(request: AssessmentRequest, adminNote: string | null): Promise<Payment> {
     if (request.activePaymentId === null) {
       throw new ConflictException('Cannot manually confirm payment without an active payment record.');
     }
 
-    const payment = this.repository.findPaymentById(request.activePaymentId);
+    const payment = await this.repository.findPaymentById(request.activePaymentId);
     if (payment === null) {
       throw new NotFoundException(`Payment '${request.activePaymentId}' was not found.`);
     }
@@ -199,14 +203,14 @@ export class PaymentService {
     }
 
     const now = new Date();
-    const confirmedPayment = this.repository.savePayment({
+    const confirmedPayment = await this.repository.savePayment({
       ...payment,
       paymentStatus: PaymentStatus.PAID,
       paidAt: now,
       updatedAt: now,
     });
 
-    this.repository.appendPaymentEvent({
+    await this.repository.appendPaymentEvent({
       id: randomUUID(),
       paymentId: confirmedPayment.id,
       eventType: 'manual_confirmation',
@@ -224,12 +228,12 @@ export class PaymentService {
     return confirmedPayment;
   }
 
-  waivePayment(request: AssessmentRequest, adminNote: string | null): Payment | null {
+  async waivePayment(request: AssessmentRequest, adminNote: string | null): Promise<Payment | null> {
     if (request.activePaymentId === null) {
       return null;
     }
 
-    const payment = this.repository.findPaymentById(request.activePaymentId);
+    const payment = await this.repository.findPaymentById(request.activePaymentId);
     if (payment === null) {
       throw new NotFoundException(`Payment '${request.activePaymentId}' was not found.`);
     }
@@ -246,13 +250,13 @@ export class PaymentService {
     }
 
     const now = new Date();
-    const waivedPayment = this.repository.savePayment({
+    const waivedPayment = await this.repository.savePayment({
       ...payment,
       paymentStatus: PaymentStatus.WAIVED,
       updatedAt: now,
     });
 
-    this.repository.appendPaymentEvent({
+    await this.repository.appendPaymentEvent({
       id: randomUUID(),
       paymentId: waivedPayment.id,
       eventType: 'payment_waived',
@@ -270,16 +274,16 @@ export class PaymentService {
     return waivedPayment;
   }
 
-  listPaymentsByRequestId(requestId: string): Payment[] {
+  async listPaymentsByRequestId(requestId: string): Promise<Payment[]> {
     return this.repository.listPaymentsByRequestId(requestId);
   }
 
   async processWebhook(payload: PaymentWebhookPayload): Promise<ProcessPaymentWebhookResult> {
     const idempotencyKey = this.toWebhookIdempotencyKey(payload);
-    const existingEvent = this.repository.findPaymentEventByIdempotencyKey(idempotencyKey);
+    const existingEvent = await this.repository.findPaymentEventByIdempotencyKey(idempotencyKey);
 
     if (existingEvent !== null) {
-      const existingPayment = this.repository.findPaymentById(existingEvent.paymentId);
+      const existingPayment = await this.repository.findPaymentById(existingEvent.paymentId);
       if (existingPayment === null) {
         throw new NotFoundException(`Payment '${existingEvent.paymentId}' was not found.`);
       }
@@ -294,7 +298,7 @@ export class PaymentService {
       };
     }
 
-    const payment = this.repository.findPaymentByProviderReference(
+    const payment = await this.repository.findPaymentByProviderReference(
       payload.providerCode,
       payload.providerReferenceId,
     );
@@ -337,7 +341,7 @@ export class PaymentService {
           transitionSkipReason =
             `Cannot transition payment from '${payment.paymentStatus}' to '${mapped.nextPaymentStatus}'.`;
         } else {
-          nextPayment = this.repository.savePayment({
+          nextPayment = await this.repository.savePayment({
             ...payment,
             paymentStatus: mapped.nextPaymentStatus,
             paidAt:
@@ -353,7 +357,7 @@ export class PaymentService {
       }
     }
 
-    const recordedEvent = this.repository.appendPaymentEvent({
+    const recordedEvent = await this.repository.appendPaymentEvent({
       id: randomUUID(),
       paymentId: payment.id,
       eventType,
@@ -385,14 +389,14 @@ export class PaymentService {
     };
   }
 
-  private getOrInferRequestBillingMode(requestId: string): BillingModeType {
-    const existingSnapshot = this.repository.findRequestBillingModeSnapshot(requestId);
+  private async getOrInferRequestBillingMode(requestId: string): Promise<BillingModeType> {
+    const existingSnapshot = await this.repository.findRequestBillingModeSnapshot(requestId);
     if (existingSnapshot !== null) {
       return existingSnapshot;
     }
 
-    const fallbackBillingMode = this.repository.getBillingSettings().billingMode;
-    this.repository.saveRequestBillingModeSnapshot(requestId, fallbackBillingMode);
+    const fallbackBillingMode = (await this.repository.getBillingSettings()).billingMode;
+    await this.repository.saveRequestBillingModeSnapshot(requestId, fallbackBillingMode);
     return fallbackBillingMode;
   }
 

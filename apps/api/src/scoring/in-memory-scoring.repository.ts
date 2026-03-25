@@ -15,7 +15,7 @@ export class InMemoryScoringRepository extends ScoringRepository {
   private readonly snapshotsByResultSetId = new Map<string, ScoringResultSetSnapshot>();
   private readonly resultSetIdsBySessionId = new Map<string, string[]>();
 
-  createResultSetSnapshot(snapshot: ScoringResultSetSnapshot): ScoringResultSetSnapshot {
+  async createResultSetSnapshot(snapshot: ScoringResultSetSnapshot): Promise<ScoringResultSetSnapshot> {
     const normalized = this.normalizeSnapshot(snapshot);
     this.snapshotsByResultSetId.set(normalized.resultSet.id, normalized);
 
@@ -26,8 +26,8 @@ export class InMemoryScoringRepository extends ScoringRepository {
     return this.normalizeSnapshot(normalized);
   }
 
-  findLatestResultSetBySessionId(sessionId: string): ScoringResultSetSnapshot | null {
-    const snapshots = this.listResultSetsBySessionId(sessionId);
+  async findLatestResultSetBySessionId(sessionId: string): Promise<ScoringResultSetSnapshot | null> {
+    const snapshots = await this.listResultSetsBySessionId(sessionId);
     if (snapshots.length === 0) {
       return null;
     }
@@ -35,7 +35,7 @@ export class InMemoryScoringRepository extends ScoringRepository {
     return snapshots[snapshots.length - 1] ?? null;
   }
 
-  listResultSetsBySessionId(sessionId: string): ScoringResultSetSnapshot[] {
+  async listResultSetsBySessionId(sessionId: string): Promise<ScoringResultSetSnapshot[]> {
     const resultSetIds = this.resultSetIdsBySessionId.get(sessionId) ?? [];
     return resultSetIds
       .map((resultSetId) => this.snapshotsByResultSetId.get(resultSetId))

@@ -24,13 +24,13 @@ export class PaymentController {
 
   @RequireMinRole(UserRole.ADMIN)
   @Get('settings')
-  getBillingSettings() {
+  async getBillingSettings() {
     return this.paymentService.getBillingSettings();
   }
 
   @RequireMinRole(UserRole.ADMIN)
   @Patch('settings')
-  updateBillingSettings(@Body() body: unknown) {
+  async updateBillingSettings(@Body() body: unknown) {
     const payload = this.parseUpdateBillingSettingsBody(body);
     return this.paymentService.updateBillingMode(payload.billingMode);
   }

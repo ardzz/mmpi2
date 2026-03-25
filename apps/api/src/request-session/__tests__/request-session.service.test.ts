@@ -1,6 +1,7 @@
 import { MMPI2_1989_TRIPLET } from '@mmpi2/config';
 import {
   BillingMode,
+  DoctorCaseValidityLabel,
   ExamSessionStatus,
   PaymentRequirement,
   type BillingMode as BillingModeType,
@@ -27,7 +28,7 @@ import { RequestSessionService } from '../request-session.service';
 const PATIENT_USER_ID = '11111111-1111-4111-8111-111111111111';
 const DOCTOR_USER_ID = '22222222-2222-4222-8222-222222222222';
 
-function setupService(billingMode: BillingModeType = BillingMode.DISABLED) {
+async function setupService(billingMode: BillingModeType = BillingMode.DISABLED) {
   const profileRepository = new InMemoryProfileRepository();
   const profileService = new ProfileService(profileRepository);
 
@@ -40,7 +41,7 @@ function setupService(billingMode: BillingModeType = BillingMode.DISABLED) {
     new MidtransGateway(),
     new XenditGateway(),
   );
-  paymentService.updateBillingMode(billingMode);
+  await paymentService.updateBillingMode(billingMode);
 
   const service = new RequestSessionService(workflowRepository, profileService, paymentService);
   return {
@@ -51,8 +52,8 @@ function setupService(billingMode: BillingModeType = BillingMode.DISABLED) {
   };
 }
 
-function createCompletePatientProfile(profileService: ProfileService, userId: string): void {
-  profileService.upsertPatientProfile(userId, {
+async function createCompletePatientProfile(profileService: ProfileService, userId: string): Promise<void> {
+  await profileService.upsertPatientProfile(userId, {
     fullName: 'Patient One',
     governmentId: 'ID-12345',
     dateOfBirth: new Date('1990-05-10'),
@@ -66,8 +67,8 @@ function createCompletePatientProfile(profileService: ProfileService, userId: st
   });
 }
 
-function createDoctorProfile(profileService: ProfileService, userId: string): void {
-  profileService.upsertDoctorProfile(userId, {
+async function createDoctorProfile(profileService: ProfileService, userId: string): Promise<void> {
+  await profileService.upsertDoctorProfile(userId, {
     fullName: 'Dr. Tester',
     licenseNumber: 'PSY-9001',
     specialty: 'Clinical Psychology',
@@ -75,12 +76,12 @@ function createDoctorProfile(profileService: ProfileService, userId: string): vo
 }
 
 describe('RequestSessionService', () => {
-  it('executes free-mode happy path with frozen versions and answer upsert behavior', () => {
-    const { service, profileService } = setupService(BillingMode.DISABLED);
-    createCompletePatientProfile(profileService, PATIENT_USER_ID);
-    createDoctorProfile(profileService, DOCTOR_USER_ID);
+  it('executes free-mode happy path with frozen versions and answer upsert behavior', async () => {
+    const { service, profileService } = await setupService(BillingMode.DISABLED);
+    await createCompletePatientProfile(profileService, PATIENT_USER_ID);
+    await createDoctorProfile(profileService, DOCTOR_USER_ID);
 
-    const createdRequest = service.createAssessmentRequest(PATIENT_USER_ID, {
+    const createdRequest = await service.createAssessmentRequest(PATIENT_USER_ID, {
       purpose: 'Pre-employment screening',
     });
 
@@ -89,17 +90,17 @@ describe('RequestSessionService', () => {
     expect(createdRequest.activePaymentId).toBeNull();
     expect(createdRequest.status).toBe('ready_for_admin_review');
 
-    const assignedRequest = service.assignDoctor(createdRequest.id, {
+    const assignedRequest = await service.assignDoctor(createdRequest.id, {
       doctorUserId: DOCTOR_USER_ID,
     });
     expect(assignedRequest.doctorUserId).toBe(DOCTOR_USER_ID);
 
-    const approvedRequest = service.reviewRequest(createdRequest.id, {
+    const approvedRequest = await service.reviewRequest(createdRequest.id, {
       decision: 'approved',
     });
     expect(approvedRequest.status).toBe('approved');
 
-    const readyState = service.getSessionStateForPatient(PATIENT_USER_ID, createdRequest.id);
+    const readyState = await service.getSessionStateForPatient(PATIENT_USER_ID, createdRequest.id);
     expect(readyState.session.status).toBe(ExamSessionStatus.READY_TO_START);
     expect(readyState.frozenVersions).toEqual({
       instrumentVersionId: MMPI2_1989_TRIPLET.instrument.id,
@@ -107,11 +108,11 @@ describe('RequestSessionService', () => {
       scoringConfigVersionId: MMPI2_1989_TRIPLET.scoringConfig.id,
     });
 
-    const startedState = service.startSessionForPatient(PATIENT_USER_ID, createdRequest.id);
+    const startedState = await service.startSessionForPatient(PATIENT_USER_ID, createdRequest.id);
     expect(startedState.session.status).toBe(ExamSessionStatus.IN_PROGRESS);
     expect(startedState.session.startedAt).not.toBeNull();
 
-    const savedState = service.saveAnswersForPatient(PATIENT_USER_ID, createdRequest.id, {
+    const savedState = await service.saveAnswersForPatient(PATIENT_USER_ID, createdRequest.id, {
       answers: [
         { questionNumber: 1, answer: 'true' },
         { questionNumber: 2, answer: 'false' },
@@ -121,7 +122,7 @@ describe('RequestSessionService', () => {
     expect(savedState.answers).toHaveLength(2);
     expect(savedState.progress.answeredCount).toBe(2);
 
-    const overwrittenState = service.saveAnswersForPatient(PATIENT_USER_ID, createdRequest.id, {
+    const overwrittenState = await service.saveAnswersForPatient(PATIENT_USER_ID, createdRequest.id, {
       answers: [{ questionNumber: 1, answer: 'false' }],
     });
 
@@ -130,80 +131,80 @@ describe('RequestSessionService', () => {
       'false',
     );
 
-    const submittedState = service.submitSessionForPatient(PATIENT_USER_ID, createdRequest.id);
+    const submittedState = await service.submitSessionForPatient(PATIENT_USER_ID, createdRequest.id);
     expect(submittedState.session.status).toBe(ExamSessionStatus.SUBMITTED);
     expect(submittedState.session.submittedAt).not.toBeNull();
 
-    expect(() =>
+    await expect(
       service.saveAnswersForPatient(PATIENT_USER_ID, createdRequest.id, {
         answers: [{ questionNumber: 3, answer: 'true' }],
       }),
-    ).toThrow(ConflictException);
+    ).rejects.toThrow(ConflictException);
 
-    expect(() => service.startSessionForPatient(PATIENT_USER_ID, createdRequest.id)).toThrow(
+    await expect(service.startSessionForPatient(PATIENT_USER_ID, createdRequest.id)).rejects.toThrow(
       ConflictException,
     );
   });
 
-  it('blocks request creation when patient profile is incomplete', () => {
-    const { service, profileService } = setupService(BillingMode.DISABLED);
+  it('blocks request creation when patient profile is incomplete', async () => {
+    const { service, profileService } = await setupService(BillingMode.DISABLED);
 
-    profileService.upsertPatientProfile(PATIENT_USER_ID, {
+    await profileService.upsertPatientProfile(PATIENT_USER_ID, {
       fullName: 'Incomplete Patient',
       dateOfBirth: new Date('1991-01-01'),
       gender: 'male',
     });
 
-    expect(() =>
+    await expect(
       service.createAssessmentRequest(PATIENT_USER_ID, {
         purpose: 'Should fail',
       }),
-    ).toThrow(ForbiddenException);
+    ).rejects.toThrow(ForbiddenException);
   });
 
-  it('enforces payment/admin gating and doctor-assignment prerequisite before start', () => {
-    const { service: paidService, profileService: paidProfiles } = setupService(BillingMode.MIDTRANS);
-    createCompletePatientProfile(paidProfiles, PATIENT_USER_ID);
+  it('enforces payment/admin gating and doctor-assignment prerequisite before start', async () => {
+    const { service: paidService, profileService: paidProfiles } = await setupService(BillingMode.MIDTRANS);
+    await createCompletePatientProfile(paidProfiles, PATIENT_USER_ID);
 
-    const paidRequest = paidService.createAssessmentRequest(PATIENT_USER_ID, {
+    const paidRequest = await paidService.createAssessmentRequest(PATIENT_USER_ID, {
       purpose: 'Paid flow',
     });
 
     expect(paidRequest.paymentRequirement).toBe(PaymentRequirement.GATEWAY_REQUIRED);
     expect(paidRequest.status).toBe('awaiting_payment');
-    expect(() =>
+    await expect(
       paidService.reviewRequest(paidRequest.id, {
         decision: 'approved',
       }),
-    ).toThrow(ConflictException);
+    ).rejects.toThrow(ConflictException);
 
-    const { service: freeService, profileService: freeProfiles } = setupService(BillingMode.DISABLED);
-    createCompletePatientProfile(freeProfiles, PATIENT_USER_ID);
+    const { service: freeService, profileService: freeProfiles } = await setupService(BillingMode.DISABLED);
+    await createCompletePatientProfile(freeProfiles, PATIENT_USER_ID);
 
-    const freeRequest = freeService.createAssessmentRequest(PATIENT_USER_ID, {
+    const freeRequest = await freeService.createAssessmentRequest(PATIENT_USER_ID, {
       purpose: 'No doctor assigned yet',
     });
 
-    freeService.reviewRequest(freeRequest.id, {
+    await freeService.reviewRequest(freeRequest.id, {
       decision: 'approved',
     });
 
-    const stateBeforeDoctorAssignment = freeService.getSessionStateForPatient(
+    const stateBeforeDoctorAssignment = await freeService.getSessionStateForPatient(
       PATIENT_USER_ID,
       freeRequest.id,
     );
     expect(stateBeforeDoctorAssignment.session.status).toBe(ExamSessionStatus.APPROVED);
 
-    expect(() => freeService.startSessionForPatient(PATIENT_USER_ID, freeRequest.id)).toThrow(
+    await expect(freeService.startSessionForPatient(PATIENT_USER_ID, freeRequest.id)).rejects.toThrow(
       ConflictException,
     );
   });
 
   it('creates payment rows for gateway-required requests and supports manual confirmation', async () => {
-    const { service, profileService } = setupService(BillingMode.MIDTRANS);
-    createCompletePatientProfile(profileService, PATIENT_USER_ID);
+    const { service, profileService } = await setupService(BillingMode.MIDTRANS);
+    await createCompletePatientProfile(profileService, PATIENT_USER_ID);
 
-    const request = service.createAssessmentRequest(PATIENT_USER_ID, {
+    const request = await service.createAssessmentRequest(PATIENT_USER_ID, {
       purpose: 'Gateway payment flow',
     });
 
@@ -214,7 +215,7 @@ describe('RequestSessionService', () => {
     expect(withPayment.request.status).toBe('payment_pending');
     expect(withPayment.request.activePaymentId).toBe(withPayment.paymentId);
 
-    const confirmed = service.confirmPaymentForRequestManually(request.id, {
+    const confirmed = await service.confirmPaymentForRequestManually(request.id, {
       adminNote: 'Bank transfer verified by admin.',
     });
 
@@ -222,15 +223,15 @@ describe('RequestSessionService', () => {
     expect(confirmed.status).toBe('ready_for_admin_review');
   });
 
-  it('waives gateway-required payment without creating extra payment rows', () => {
-    const { service, profileService, paymentService } = setupService(BillingMode.XENDIT);
-    createCompletePatientProfile(profileService, PATIENT_USER_ID);
+  it('waives gateway-required payment without creating extra payment rows', async () => {
+    const { service, profileService, paymentService } = await setupService(BillingMode.XENDIT);
+    await createCompletePatientProfile(profileService, PATIENT_USER_ID);
 
-    const request = service.createAssessmentRequest(PATIENT_USER_ID, {
+    const request = await service.createAssessmentRequest(PATIENT_USER_ID, {
       purpose: 'Waiver path',
     });
 
-    const waived = service.waivePaymentForRequest(request.id, {
+    const waived = await service.waivePaymentForRequest(request.id, {
       adminNote: 'Compassionate waiver approved.',
     });
 
@@ -238,7 +239,7 @@ describe('RequestSessionService', () => {
     expect(waived.paymentSatisfied).toBe(true);
     expect(waived.status).toBe('ready_for_admin_review');
     expect(waived.activePaymentId).toBeNull();
-    expect(paymentService.listPaymentsByRequestId(request.id)).toEqual([]);
+    expect(await paymentService.listPaymentsByRequestId(request.id)).toEqual([]);
   });
 
   it('applies verified paid webhook to request-level billing only and ignores duplicates', async () => {
@@ -247,15 +248,15 @@ describe('RequestSessionService', () => {
       profileService,
       paymentService,
       paymentRepository,
-    } = setupService(BillingMode.MIDTRANS);
-    createCompletePatientProfile(profileService, PATIENT_USER_ID);
+    } = await setupService(BillingMode.MIDTRANS);
+    await createCompletePatientProfile(profileService, PATIENT_USER_ID);
 
-    const request = service.createAssessmentRequest(PATIENT_USER_ID, {
+    const request = await service.createAssessmentRequest(PATIENT_USER_ID, {
       purpose: 'Webhook paid flow',
     });
 
     const withPayment = await service.createPaymentForPatientRequest(PATIENT_USER_ID, request.id);
-    const payment = paymentService.listPaymentsByRequestId(request.id).at(-1);
+    const payment = (await paymentService.listPaymentsByRequestId(request.id)).at(-1);
     expect(payment).toBeDefined();
     if (payment === undefined || payment.providerReferenceId === null) {
       throw new Error('Expected active payment with provider reference.');
@@ -278,21 +279,21 @@ describe('RequestSessionService', () => {
     expect(afterDuplicate.status).toBe('ready_for_admin_review');
     expect(afterDuplicate.paymentSatisfied).toBe(true);
 
-    const paymentEvents = paymentRepository.listPaymentEventsByPaymentId(withPayment.paymentId);
+    const paymentEvents = await paymentRepository.listPaymentEventsByPaymentId(withPayment.paymentId);
     expect(paymentEvents).toHaveLength(2);
     expect(paymentEvents.at(-1)?.idempotencyKey).toBe('midtrans:evt-paid-dup-001');
   });
 
   it('keeps request unsatisfied when verified webhook reports failed/expired/cancelled outcomes', async () => {
-    const { service, profileService, paymentService } = setupService(BillingMode.XENDIT);
-    createCompletePatientProfile(profileService, PATIENT_USER_ID);
+    const { service, profileService, paymentService } = await setupService(BillingMode.XENDIT);
+    await createCompletePatientProfile(profileService, PATIENT_USER_ID);
 
-    const request = service.createAssessmentRequest(PATIENT_USER_ID, {
+    const request = await service.createAssessmentRequest(PATIENT_USER_ID, {
       purpose: 'Webhook failed flow',
     });
 
     const withPayment = await service.createPaymentForPatientRequest(PATIENT_USER_ID, request.id);
-    const payment = paymentService.listPaymentsByRequestId(request.id).at(-1);
+    const payment = (await paymentService.listPaymentsByRequestId(request.id)).at(-1);
     expect(payment).toBeDefined();
     if (payment === undefined || payment.providerReferenceId === null) {
       throw new Error('Expected active payment with provider reference.');
@@ -309,8 +310,35 @@ describe('RequestSessionService', () => {
     expect(failedResult.paymentSatisfied).toBe(false);
     expect(failedResult.status).toBe('payment_pending');
 
-    const latestPayment = paymentService.listPaymentsByRequestId(request.id).at(-1);
+    const latestPayment = (await paymentService.listPaymentsByRequestId(request.id)).at(-1);
     expect(latestPayment?.paymentStatus).toBe('failed');
     expect(withPayment.request.activePaymentId).toBe(latestPayment?.id);
+  });
+
+  it('lists doctor queue cases ordered by latest submission time', async () => {
+    const { service, profileService } = await setupService(BillingMode.DISABLED);
+    await createCompletePatientProfile(profileService, PATIENT_USER_ID);
+    await createDoctorProfile(profileService, DOCTOR_USER_ID);
+
+    const firstRequest = await service.createAssessmentRequest(PATIENT_USER_ID, {
+      purpose: 'Doctor queue case one',
+    });
+    await service.assignDoctor(firstRequest.id, { doctorUserId: DOCTOR_USER_ID });
+    await service.reviewRequest(firstRequest.id, { decision: 'approved' });
+    await service.startSessionForPatient(PATIENT_USER_ID, firstRequest.id);
+    await service.submitSessionForPatient(PATIENT_USER_ID, firstRequest.id);
+
+    const secondRequest = await service.createAssessmentRequest(PATIENT_USER_ID, {
+      purpose: 'Doctor queue case two',
+    });
+    await service.assignDoctor(secondRequest.id, { doctorUserId: DOCTOR_USER_ID });
+    await service.reviewRequest(secondRequest.id, { decision: 'approved' });
+
+    const doctorQueue = await service.getDoctorCaseQueue(DOCTOR_USER_ID);
+
+    expect(doctorQueue).toHaveLength(2);
+    expect(doctorQueue[0]?.assessmentRequestId).toBe(firstRequest.id);
+    expect(doctorQueue[0]?.validityLabel).toBe(DoctorCaseValidityLabel.PENDING);
+    expect(doctorQueue[1]?.assessmentRequestId).toBe(secondRequest.id);
   });
 });

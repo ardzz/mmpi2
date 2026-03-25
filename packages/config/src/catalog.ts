@@ -205,13 +205,28 @@ const flattenedScaleItems = SCALE_GROUPS.flatMap((group) =>
   flattenScaleItems(group.items).map((item) => ({ groupTitle: group.title, item })),
 );
 
+const scaleDefinitionsByKey = new Map<string, ScaleDefinitionRecord>();
+for (const { groupTitle, item } of flattenedScaleItems) {
+  if (!scaleDefinitionsByKey.has(item.name)) {
+    scaleDefinitionsByKey.set(item.name, buildScaleDefinitionRecord(groupTitle, item));
+  }
+}
+
+const scaleKeyEntriesByCompositeKey = new Map<string, ScaleKeyEntryRecord>();
+for (const { item } of flattenedScaleItems) {
+  for (const entry of buildScaleKeyEntries(item)) {
+    const compositeKey = `${entry.scaleKey}:${entry.questionNumber}:${entry.keyedAnswer}`;
+    if (!scaleKeyEntriesByCompositeKey.has(compositeKey)) {
+      scaleKeyEntriesByCompositeKey.set(compositeKey, entry);
+    }
+  }
+}
+
 export const MMPI2_1989_REFERENCE_CATALOG: ReferenceCatalog = {
   versionTriplet: MMPI2_1989_TRIPLET,
   questionBankItems: toQuestionBankItems(QUESTION_BANK),
-  scaleDefinitions: flattenedScaleItems.map(({ groupTitle, item }) =>
-    buildScaleDefinitionRecord(groupTitle, item),
-  ),
-  scaleKeyEntries: flattenedScaleItems.flatMap(({ item }) => buildScaleKeyEntries(item)),
+  scaleDefinitions: [...scaleDefinitionsByKey.values()],
+  scaleKeyEntries: [...scaleKeyEntriesByCompositeKey.values()],
   normTables: flattenedScaleItems.flatMap(({ item }) => buildNormTables(item)),
   consistencyPairs: flattenedScaleItems.flatMap(({ item }) => buildConsistencyPairs(item)),
   criticalItemGroups: flattenedScaleItems

@@ -3,10 +3,16 @@ import {
   canTransitionReport,
   ClinicalReportSchema,
   ClinicalReportStatus,
+  PatientDocumentDownloadSchema,
+  PatientDocumentDetailSchema,
+  PatientDocumentSummarySchema,
   ScoreResultSetStatus,
   type AmendReportDto,
   type ClinicalReport,
   type ExamSession,
+  type PatientDocumentDownload,
+  type PatientDocumentDetail,
+  type PatientDocumentSummary,
   type PublishReportDto,
   type ReportSignature,
   type SaveDraftReportDto,
@@ -20,6 +26,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { ProfileService } from '../profile/profile.service';
+import { RequestSessionRepository } from '../request-session/request-session.repository';
 import { ScoringService } from '../scoring/scoring.service';
 import { ReportRepository } from './report.repository';
 
@@ -35,29 +43,118 @@ export class ReportService {
   constructor(
     @Inject(ReportRepository)
     private readonly reportRepository: ReportRepository,
+    @Inject(RequestSessionRepository)
+    private readonly requestSessionRepository: RequestSessionRepository,
+    @Inject(ProfileService)
+    private readonly profileService: ProfileService,
     @Inject(ScoringService)
     private readonly scoringService: ScoringService,
   ) {}
 
-  getReportStateForDoctor(sessionId: string, doctorUserId: string): ReportAuthoringState {
-    const scoredSession = this.mustGetCanonicalScoredSession(sessionId, doctorUserId);
-    const latestReport = this.reportRepository.findLatestReportBySessionId(sessionId);
+  async listPublishedDocumentsForPatient(patientUserId: string): Promise<PatientDocumentSummary[]> {
+    const publishedReports = await this.reportRepository.listPublishedReports();
+    const documents: PatientDocumentSummary[] = [];
+
+    for (const report of publishedReports) {
+      const session = await this.requestSessionRepository.findSessionById(report.examSessionId);
+      if (session === null || session.patientUserId !== patientUserId) {
+        continue;
+      }
+
+      const author = await this.profileService.getDoctorProfileByUserId(report.authorUserId);
+      documents.push(
+        PatientDocumentSummarySchema.parse({
+          id: report.id,
+          examSessionId: report.examSessionId,
+          title: 'Clinical Report',
+          documentType: 'clinical_report',
+          reportStatus: report.reportStatus,
+          publishedAt: report.publishedAt,
+          authorUserId: report.authorUserId,
+          authorName: author.fullName,
+          hasDownload: (await this.reportRepository.findLatestDocumentByReportId(report.id)) !== null,
+        }),
+      );
+    }
+
+    return documents.sort((left, right) => {
+      const leftTime = left.publishedAt?.getTime() ?? 0;
+      const rightTime = right.publishedAt?.getTime() ?? 0;
+      return rightTime - leftTime;
+    });
+  }
+
+  async getPublishedDocumentDetailForPatient(
+    patientUserId: string,
+    reportId: string,
+  ): Promise<PatientDocumentDetail> {
+    const report = await this.reportRepository.findReportById(reportId);
+    if (report === null || report.reportStatus !== ClinicalReportStatus.PUBLISHED) {
+      throw new NotFoundException(`Published report '${reportId}' was not found.`);
+    }
+
+    const session = await this.requestSessionRepository.findSessionById(report.examSessionId);
+    if (session === null) {
+      throw new NotFoundException(`Exam session '${report.examSessionId}' was not found.`);
+    }
+
+    if (session.patientUserId !== patientUserId) {
+      throw new ForbiddenException('You are not allowed to access this document.');
+    }
+
+    const author = await this.profileService.getDoctorProfileByUserId(report.authorUserId);
+    const document = await this.reportRepository.findLatestDocumentByReportId(report.id);
+
+    return PatientDocumentDetailSchema.parse({
+      id: report.id,
+      examSessionId: report.examSessionId,
+      title: 'Clinical Report',
+      documentType: 'clinical_report',
+      reportStatus: report.reportStatus,
+      publishedAt: report.publishedAt,
+      authorUserId: report.authorUserId,
+      authorName: author.fullName,
+      interpretationSummary: report.interpretationSummary,
+      narrative: report.narrative,
+      supplementalObservations: report.supplementalObservations,
+      amendedFromId: report.amendedFromId,
+      hasDownload: document !== null,
+    });
+  }
+
+  async getPublishedDocumentDownloadForPatient(
+    patientUserId: string,
+    reportId: string,
+  ): Promise<PatientDocumentDownload> {
+    await this.getPublishedDocumentDetailForPatient(patientUserId, reportId);
+
+    const document = await this.reportRepository.findLatestDocumentByReportId(reportId);
+    if (document === null) {
+      throw new NotFoundException(`Published report document '${reportId}' is not yet available.`);
+    }
+
+    return PatientDocumentDownloadSchema.parse(document);
+  }
+
+  async getReportStateForDoctor(sessionId: string, doctorUserId: string): Promise<ReportAuthoringState> {
+    const scoredSession = await this.mustGetCanonicalScoredSession(sessionId, doctorUserId);
+    const latestReport = await this.reportRepository.findLatestReportBySessionId(sessionId);
 
     return this.toReportAuthoringState(scoredSession.session, scoredSession.resultSet, latestReport);
   }
 
-  saveDraftForDoctor(
+  async saveDraftForDoctor(
     sessionId: string,
     doctorUserId: string,
     payload: SaveDraftReportDto,
-  ): ReportAuthoringState {
-    const scoredSession = this.mustGetCanonicalScoredSession(sessionId, doctorUserId);
-    const existingReport = this.reportRepository.findLatestReportBySessionId(sessionId);
+  ): Promise<ReportAuthoringState> {
+    const scoredSession = await this.mustGetCanonicalScoredSession(sessionId, doctorUserId);
+    const existingReport = await this.reportRepository.findLatestReportBySessionId(sessionId);
     const now = new Date();
 
     const report =
       existingReport === null
-        ? this.reportRepository.createReport(
+        ? await this.reportRepository.createReport(
             ClinicalReportSchema.parse({
               id: randomUUID(),
               examSessionId: scoredSession.session.id,
@@ -73,14 +170,18 @@ export class ReportService {
               updatedAt: now,
             }),
           )
-        : this.updateEditableReportDraft(existingReport, scoredSession.resultSet.id, payload);
+        : await this.updateEditableReportDraft(existingReport, scoredSession.resultSet.id, payload);
 
     return this.toReportAuthoringState(scoredSession.session, scoredSession.resultSet, report);
   }
 
-  signReportForDoctor(sessionId: string, doctorUserId: string, payload: SignReportDto): ReportAuthoringState {
-    const scoredSession = this.mustGetCanonicalScoredSession(sessionId, doctorUserId);
-    const existingReport = this.mustFindLatestReportOrThrow(sessionId);
+  async signReportForDoctor(
+    sessionId: string,
+    doctorUserId: string,
+    payload: SignReportDto,
+  ): Promise<ReportAuthoringState> {
+    const scoredSession = await this.mustGetCanonicalScoredSession(sessionId, doctorUserId);
+    const existingReport = await this.mustFindLatestReportOrThrow(sessionId);
     this.assertCanonicalResultBinding(existingReport, scoredSession.resultSet.id);
 
     if (existingReport.reportStatus === ClinicalReportStatus.PUBLISHED) {
@@ -93,10 +194,10 @@ export class ReportService {
 
     const signedReport =
       existingReport.reportStatus === ClinicalReportStatus.DRAFT
-        ? this.transitionReport(existingReport, ClinicalReportStatus.PENDING_REVIEW)
+        ? await this.transitionReport(existingReport, ClinicalReportStatus.PENDING_REVIEW)
         : existingReport;
 
-    this.reportRepository.createSignature({
+    await this.reportRepository.createSignature({
       id: randomUUID(),
       clinicalReportId: signedReport.id,
       storagePath: payload.signatureStoragePath,
@@ -106,13 +207,13 @@ export class ReportService {
     return this.toReportAuthoringState(scoredSession.session, scoredSession.resultSet, signedReport);
   }
 
-  publishReportForDoctor(
+  async publishReportForDoctor(
     sessionId: string,
     doctorUserId: string,
     payload: PublishReportDto,
-  ): ReportAuthoringState {
-    const scoredSession = this.mustGetCanonicalScoredSession(sessionId, doctorUserId);
-    const report = this.mustFindLatestReportOrThrow(sessionId);
+  ): Promise<ReportAuthoringState> {
+    const scoredSession = await this.mustGetCanonicalScoredSession(sessionId, doctorUserId);
+    const report = await this.mustFindLatestReportOrThrow(sessionId);
     this.assertCanonicalResultBinding(report, scoredSession.resultSet.id);
 
     if (report.reportStatus === ClinicalReportStatus.PUBLISHED) {
@@ -123,7 +224,7 @@ export class ReportService {
       throw new ConflictException('Amended records cannot be republished directly.');
     }
 
-    const signature = this.reportRepository.findLatestSignatureByReportId(report.id);
+    const signature = await this.reportRepository.findLatestSignatureByReportId(report.id);
     if (signature === null) {
       throw new ConflictException('Publishing requires explicit doctor sign-off first.');
     }
@@ -135,7 +236,7 @@ export class ReportService {
     }
 
     const now = new Date();
-    const publishedReport = this.reportRepository.saveReport(
+    const publishedReport = await this.reportRepository.saveReport(
       ClinicalReportSchema.parse({
         ...report,
         interpretationSummary: payload.interpretationSummary,
@@ -150,13 +251,13 @@ export class ReportService {
     return this.toReportAuthoringState(scoredSession.session, scoredSession.resultSet, publishedReport);
   }
 
-  amendPublishedReportForDoctor(
+  async amendPublishedReportForDoctor(
     sessionId: string,
     doctorUserId: string,
     payload: AmendReportDto,
-  ): ReportAuthoringState {
-    const scoredSession = this.mustGetCanonicalScoredSession(sessionId, doctorUserId);
-    const publishedReport = this.mustFindLatestReportOrThrow(sessionId);
+  ): Promise<ReportAuthoringState> {
+    const scoredSession = await this.mustGetCanonicalScoredSession(sessionId, doctorUserId);
+    const publishedReport = await this.mustFindLatestReportOrThrow(sessionId);
 
     if (publishedReport.reportStatus !== ClinicalReportStatus.PUBLISHED) {
       throw new ConflictException('Only published reports can be amended.');
@@ -164,15 +265,15 @@ export class ReportService {
 
     this.assertCanonicalResultBinding(publishedReport, scoredSession.resultSet.id);
 
-    const previousSignature = this.reportRepository.findLatestSignatureByReportId(publishedReport.id);
+    const previousSignature = await this.reportRepository.findLatestSignatureByReportId(publishedReport.id);
     if (previousSignature === null) {
       throw new ConflictException('Published reports must contain a signature before amendment.');
     }
 
     const now = new Date();
-    const amendedAncestor = this.transitionReport(publishedReport, ClinicalReportStatus.AMENDED);
+    const amendedAncestor = await this.transitionReport(publishedReport, ClinicalReportStatus.AMENDED);
 
-    const amendedReport = this.reportRepository.createReport(
+    const amendedReport = await this.reportRepository.createReport(
       ClinicalReportSchema.parse({
         id: randomUUID(),
         examSessionId: amendedAncestor.examSessionId,
@@ -189,7 +290,7 @@ export class ReportService {
       }),
     );
 
-    this.reportRepository.createSignature({
+    await this.reportRepository.createSignature({
       id: randomUUID(),
       clinicalReportId: amendedReport.id,
       storagePath: previousSignature.storagePath,
@@ -199,11 +300,11 @@ export class ReportService {
     return this.toReportAuthoringState(scoredSession.session, scoredSession.resultSet, amendedReport);
   }
 
-  private updateEditableReportDraft(
+  private async updateEditableReportDraft(
     report: ClinicalReport,
     canonicalResultSetId: string,
     payload: SaveDraftReportDto,
-  ): ClinicalReport {
+  ): Promise<ClinicalReport> {
     if (report.reportStatus === ClinicalReportStatus.PUBLISHED) {
       throw new ConflictException('Published reports are immutable. Create an amendment instead.');
     }
@@ -238,8 +339,8 @@ export class ReportService {
     );
   }
 
-  private mustGetCanonicalScoredSession(sessionId: string, doctorUserId: string) {
-    const scoredSession = this.scoringService.getLatestScoreForDoctor(sessionId, doctorUserId);
+  private async mustGetCanonicalScoredSession(sessionId: string, doctorUserId: string) {
+    const scoredSession = await this.scoringService.getLatestScoreForDoctor(sessionId, doctorUserId);
 
     if (scoredSession.session.doctorUserId !== doctorUserId) {
       throw new ForbiddenException(`Doctor '${doctorUserId}' is not assigned to session '${sessionId}'.`);
@@ -254,8 +355,8 @@ export class ReportService {
     return scoredSession;
   }
 
-  private mustFindLatestReportOrThrow(sessionId: string): ClinicalReport {
-    const report = this.reportRepository.findLatestReportBySessionId(sessionId);
+  private async mustFindLatestReportOrThrow(sessionId: string): Promise<ClinicalReport> {
+    const report = await this.reportRepository.findLatestReportBySessionId(sessionId);
     if (report === null) {
       throw new NotFoundException(`Clinical report for session '${sessionId}' was not found.`);
     }
@@ -271,7 +372,7 @@ export class ReportService {
     }
   }
 
-  private transitionReport(report: ClinicalReport, targetStatus: ClinicalReport['reportStatus']): ClinicalReport {
+  private async transitionReport(report: ClinicalReport, targetStatus: ClinicalReport['reportStatus']): Promise<ClinicalReport> {
     if (!canTransitionReport(report.reportStatus, targetStatus)) {
       throw new ConflictException(
         `Cannot transition report from '${report.reportStatus}' to '${targetStatus}'.`,
@@ -287,11 +388,11 @@ export class ReportService {
     );
   }
 
-  private toReportAuthoringState(
+  private async toReportAuthoringState(
     session: ExamSession,
     resultSet: ScoreResultSet,
     report: ClinicalReport | null,
-  ): ReportAuthoringState {
+  ): Promise<ReportAuthoringState> {
     if (report === null) {
       return {
         session,
@@ -305,7 +406,7 @@ export class ReportService {
       session,
       resultSet,
       report,
-      signature: this.reportRepository.findLatestSignatureByReportId(report.id),
+      signature: await this.reportRepository.findLatestSignatureByReportId(report.id),
     };
   }
 }

@@ -24,6 +24,8 @@ datasource db {
 model AppSettings {
   id              String   @id @default(uuid())
   billingMode     String   @default("disabled") @map("billing_mode") // 'disabled' | 'enabled'
+  defaultCurrency String   @default("IDR") @map("default_currency")
+  defaultAmount   Decimal? @map("default_amount")
   updatedByUserId String?  @map("updated_by_user_id")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
@@ -49,6 +51,7 @@ model User {
   patientProfile          PatientProfile?
   doctorProfile           DoctorProfile?
   assessmentRequests      AssessmentRequest[]  @relation("PatientRequests")
+  assignedRequests        AssessmentRequest[]  @relation("AssignedDoctorRequests")
   assignedSessions        ExamSession[]        @relation("DoctorSessions")
   patientSessions         ExamSession[]        @relation("PatientSessions")
   authoredClinicalReports ClinicalReport[]     @relation("ClinicalReportAuthoredBy")
@@ -267,25 +270,30 @@ model NormTableEntry {
 // ===========================================================================
 
 model AssessmentRequest {
-  id                 String   @id @default(uuid())
-  patientUserId      String   @map("patient_user_id")
-  assessmentTypeId   String   @map("assessment_type_id")
-  requestStatus      String   @default("draft") @map("request_status")
-  paymentRequirement String   @default("optional") @map("payment_requirement")
-  paymentSatisfied   Boolean  @default(false) @map("payment_satisfied")
-  activePaymentId    String?  @unique @map("active_payment_id")
-  purpose            String?
-  requestedAt        DateTime @default(now()) @map("requested_at")
-  createdAt          DateTime @default(now()) @map("created_at")
-  updatedAt          DateTime @updatedAt @map("updated_at")
+  id                  String   @id @default(uuid())
+  patientUserId       String   @map("patient_user_id")
+  assessmentTypeId    String   @map("assessment_type_id")
+  requestStatus       String   @default("draft") @map("request_status")
+  billingModeSnapshot String?  @map("billing_mode_snapshot")
+  paymentRequirement  String   @default("optional") @map("payment_requirement")
+  paymentSatisfied    Boolean  @default(false) @map("payment_satisfied")
+  activePaymentId     String?  @unique @map("active_payment_id")
+  doctorUserId        String?  @map("doctor_user_id")
+  purpose             String?
+  adminNote           String?  @map("admin_note")
+  requestedAt         DateTime @default(now()) @map("requested_at")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
 
   patient        User           @relation("PatientRequests", fields: [patientUserId], references: [id])
+  assignedDoctor User?          @relation("AssignedDoctorRequests", fields: [doctorUserId], references: [id])
   assessmentType AssessmentType @relation(fields: [assessmentTypeId], references: [id])
   activePayment  Payment?       @relation("RequestActivePayment", fields: [activePaymentId], references: [id])
   payments       Payment[]      @relation("RequestPayments")
   examSession    ExamSession?
 
   @@index([patientUserId, requestStatus])
+  @@index([doctorUserId, requestStatus])
   @@index([paymentRequirement, paymentSatisfied])
   @@map("assessment_requests")
 }
@@ -294,7 +302,7 @@ model ExamSession {
   id                     String    @id @default(uuid())
   assessmentRequestId    String    @unique @map("assessment_request_id")
   patientUserId          String    @map("patient_user_id")
-  doctorUserId           String    @map("doctor_user_id")
+  doctorUserId           String?   @map("doctor_user_id")
   instrumentVersionId    String    @map("instrument_version_id")
   questionBankVersionId  String    @map("question_bank_version_id")
   scoringConfigVersionId String    @map("scoring_config_version_id")
@@ -309,7 +317,7 @@ model ExamSession {
 
   assessmentRequest    AssessmentRequest    @relation(fields: [assessmentRequestId], references: [id])
   patient              User                 @relation("PatientSessions", fields: [patientUserId], references: [id])
-  doctor               User                 @relation("DoctorSessions", fields: [doctorUserId], references: [id])
+  doctor               User?                @relation("DoctorSessions", fields: [doctorUserId], references: [id])
   instrumentVersion    InstrumentVersion    @relation(fields: [instrumentVersionId], references: [id])
   questionBankVersion  QuestionBankVersion  @relation(fields: [questionBankVersionId], references: [id])
   scoringConfigVersion ScoringConfigVersion @relation(fields: [scoringConfigVersionId], references: [id])

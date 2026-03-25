@@ -69,3 +69,52 @@ export const ConfirmPaymentManuallySchema = z.object({
 });
 
 export type ConfirmPaymentManuallyDto = z.infer<typeof ConfirmPaymentManuallySchema>;
+
+// ---------------------------------------------------------------------------
+// Admin request read models
+// ---------------------------------------------------------------------------
+
+export const AdminRequestQueueItemSchema = z.object({
+  id: z.string().uuid(),
+  patientUserId: z.string().uuid(),
+  patientFullName: z.string().min(1),
+  requestStatus: AssessmentRequestStatusSchema,
+  paymentRequirement: PaymentRequirementSchema,
+  paymentSatisfied: z.boolean(),
+  activePaymentId: z.string().uuid().nullable(),
+  doctorUserId: z.string().uuid().nullable(),
+  doctorName: z.string().nullable(),
+  purpose: z.string().nullable(),
+  adminNote: z.string().nullable(),
+  requestedAt: z.coerce.date(),
+  sessionId: z.string().uuid().nullable(),
+  sessionStatus: z.string().nullable(),
+});
+
+export type AdminRequestQueueItem = z.infer<typeof AdminRequestQueueItemSchema>;
+
+export const AdminRequestDetailSchema = AdminRequestQueueItemSchema.extend({
+  paymentStatus: z.string().nullable(),
+  paymentAmount: z.number().nonnegative().nullable(),
+  paymentCurrency: z.string().length(3).nullable(),
+  latestPaymentEventType: z.string().nullable(),
+  latestPaymentEventAt: z.coerce.date().nullable(),
+});
+
+export type AdminRequestDetail = z.infer<typeof AdminRequestDetailSchema>;
+
+export const AssignmentCandidateSchema = z.object({
+  userId: z.string().uuid(),
+  fullName: z.string().min(1),
+  licenseNumber: z.string().nullable(),
+  specialty: z.string().nullable(),
+  isActive: z.boolean(),
+});
+
+export type AssignmentCandidate = z.infer<typeof AssignmentCandidateSchema>;
+
+export const AdminAssignmentDetailSchema = AdminRequestDetailSchema.extend({
+  candidates: z.array(AssignmentCandidateSchema),
+});
+
+export type AdminAssignmentDetail = z.infer<typeof AdminAssignmentDetailSchema>;

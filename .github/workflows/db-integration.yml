@@ -1,0 +1,57 @@
+name: DB Integration
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [main]
+
+env:
+  NODE_VERSION: "20"
+  PNPM_VERSION: "10.28.0"
+  DATABASE_URL: postgresql://mmpi2:mmpi2_local@localhost:5432/mmpi2?schema=public
+
+jobs:
+  db-integration:
+    name: Prisma-backed API integration
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: mmpi2
+          POSTGRES_PASSWORD: mmpi2_local
+          POSTGRES_DB: mmpi2
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U mmpi2"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma client
+        run: pnpm --filter @mmpi2/db db:generate
+
+      - name: Build shared contracts and config
+        run: pnpm --filter @mmpi2/contracts build && pnpm --filter @mmpi2/config build
+
+      - name: Push Prisma schema
+        run: pnpm --filter @mmpi2/db exec prisma db push --schema prisma/schema.prisma
+
+      - name: Run Prisma-backed integration test
+        run: pnpm --filter @mmpi2/api test -- src/__tests__/integration/mmpi2-prisma-persistence.integration.test.ts

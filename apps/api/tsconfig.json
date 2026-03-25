@@ -9,6 +9,8 @@
       "@mmpi2/auth": ["../../packages/auth/dist/index.d.ts"],
       "@mmpi2/config": ["../../packages/config/dist/index.d.ts"],
       "@mmpi2/contracts": ["../../packages/contracts/dist/index.d.ts"],
+      "@mmpi2/db": ["../../packages/db/dist/index.d.ts"],
+      "@mmpi2/db/client": ["../../packages/db/dist/client.d.ts"],
       "@mmpi2/scoring": ["../../packages/scoring/dist/index.d.ts"],
       "@mmpi2/reports": ["../../packages/reports/dist/index.d.ts"]
     }

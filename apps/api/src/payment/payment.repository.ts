@@ -6,21 +6,21 @@ import type {
 } from '@mmpi2/contracts';
 
 export abstract class PaymentRepository {
-  abstract getBillingSettings(): AppBillingSettings;
-  abstract saveBillingSettings(settings: AppBillingSettings): AppBillingSettings;
+  abstract getBillingSettings(): Promise<AppBillingSettings>;
+  abstract saveBillingSettings(settings: AppBillingSettings): Promise<AppBillingSettings>;
 
-  abstract saveRequestBillingModeSnapshot(requestId: string, billingMode: BillingMode): void;
-  abstract findRequestBillingModeSnapshot(requestId: string): BillingMode | null;
+  abstract saveRequestBillingModeSnapshot(requestId: string, billingMode: BillingMode): Promise<void>;
+  abstract findRequestBillingModeSnapshot(requestId: string): Promise<BillingMode | null>;
 
-  abstract findPaymentById(paymentId: string): Payment | null;
+  abstract findPaymentById(paymentId: string): Promise<Payment | null>;
   abstract findPaymentByProviderReference(
     providerCode: Payment['providerCode'],
     providerReferenceId: string,
-  ): Payment | null;
-  abstract listPaymentsByRequestId(requestId: string): Payment[];
-  abstract savePayment(payment: Payment): Payment;
+  ): Promise<Payment | null>;
+  abstract listPaymentsByRequestId(requestId: string): Promise<Payment[]>;
+  abstract savePayment(payment: Payment): Promise<Payment>;
 
-  abstract appendPaymentEvent(event: PaymentEvent): PaymentEvent;
-  abstract findPaymentEventByIdempotencyKey(idempotencyKey: string): PaymentEvent | null;
-  abstract listPaymentEventsByPaymentId(paymentId: string): PaymentEvent[];
+  abstract appendPaymentEvent(event: PaymentEvent): Promise<PaymentEvent>;
+  abstract findPaymentEventByIdempotencyKey(idempotencyKey: string): Promise<PaymentEvent | null>;
+  abstract listPaymentEventsByPaymentId(paymentId: string): Promise<PaymentEvent[]>;
 }

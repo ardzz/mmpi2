@@ -27,32 +27,32 @@ export class InMemoryPaymentRepository extends PaymentRepository {
   private readonly paymentEventsByPaymentId = new Map<string, PaymentEvent[]>();
   private readonly paymentEventsByIdempotencyKey = new Map<string, PaymentEvent>();
 
-  getBillingSettings(): AppBillingSettings {
+  async getBillingSettings(): Promise<AppBillingSettings> {
     return this.billingSettings;
   }
 
-  saveBillingSettings(settings: AppBillingSettings): AppBillingSettings {
+  async saveBillingSettings(settings: AppBillingSettings): Promise<AppBillingSettings> {
     const validated = AppBillingSettingsSchema.parse(settings);
     this.billingSettings = validated;
     return validated;
   }
 
-  saveRequestBillingModeSnapshot(requestId: string, billingMode: BillingModeType): void {
+  async saveRequestBillingModeSnapshot(requestId: string, billingMode: BillingModeType): Promise<void> {
     this.requestBillingModeSnapshots.set(requestId, BillingModeSchema.parse(billingMode));
   }
 
-  findRequestBillingModeSnapshot(requestId: string): BillingModeType | null {
+  async findRequestBillingModeSnapshot(requestId: string): Promise<BillingModeType | null> {
     return this.requestBillingModeSnapshots.get(requestId) ?? null;
   }
 
-  findPaymentById(paymentId: string): Payment | null {
+  async findPaymentById(paymentId: string): Promise<Payment | null> {
     return this.paymentsById.get(paymentId) ?? null;
   }
 
-  findPaymentByProviderReference(
+  async findPaymentByProviderReference(
     providerCode: Payment['providerCode'],
     providerReferenceId: string,
-  ): Payment | null {
+  ): Promise<Payment | null> {
     const lookupKey = this.toProviderReferenceLookupKey(providerCode, providerReferenceId);
     const paymentId = this.paymentIdsByProviderReference.get(lookupKey);
     if (paymentId === undefined) {
@@ -62,7 +62,7 @@ export class InMemoryPaymentRepository extends PaymentRepository {
     return this.findPaymentById(paymentId);
   }
 
-  listPaymentsByRequestId(requestId: string): Payment[] {
+  async listPaymentsByRequestId(requestId: string): Promise<Payment[]> {
     const paymentIds = this.paymentIdsByRequestId.get(requestId) ?? [];
     const payments = paymentIds
       .map((paymentId) => this.paymentsById.get(paymentId) ?? null)
@@ -71,7 +71,7 @@ export class InMemoryPaymentRepository extends PaymentRepository {
     return payments.sort((left, right) => left.createdAt.getTime() - right.createdAt.getTime());
   }
 
-  savePayment(payment: Payment): Payment {
+  async savePayment(payment: Payment): Promise<Payment> {
     const validated = PaymentSchema.parse(payment);
     this.paymentsById.set(validated.id, validated);
 
@@ -92,7 +92,7 @@ export class InMemoryPaymentRepository extends PaymentRepository {
     return validated;
   }
 
-  appendPaymentEvent(event: PaymentEvent): PaymentEvent {
+  async appendPaymentEvent(event: PaymentEvent): Promise<PaymentEvent> {
     const validated = PaymentEventSchema.parse(event);
     const paymentEvents = this.paymentEventsByPaymentId.get(validated.paymentId) ?? [];
     paymentEvents.push(validated);
@@ -101,11 +101,11 @@ export class InMemoryPaymentRepository extends PaymentRepository {
     return validated;
   }
 
-  findPaymentEventByIdempotencyKey(idempotencyKey: string): PaymentEvent | null {
+  async findPaymentEventByIdempotencyKey(idempotencyKey: string): Promise<PaymentEvent | null> {
     return this.paymentEventsByIdempotencyKey.get(idempotencyKey) ?? null;
   }
 
-  listPaymentEventsByPaymentId(paymentId: string): PaymentEvent[] {
+  async listPaymentEventsByPaymentId(paymentId: string): Promise<PaymentEvent[]> {
     return this.paymentEventsByPaymentId.get(paymentId) ?? [];
   }
 

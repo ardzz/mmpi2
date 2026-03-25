@@ -3593,6 +3593,7 @@ export namespace Prisma {
   export type UserCountOutputType = {
     roleAssignments: number
     assessmentRequests: number
+    assignedRequests: number
     assignedSessions: number
     patientSessions: number
     authoredClinicalReports: number
@@ -3604,6 +3605,7 @@ export namespace Prisma {
   export type UserCountOutputTypeSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     roleAssignments?: boolean | UserCountOutputTypeCountRoleAssignmentsArgs
     assessmentRequests?: boolean | UserCountOutputTypeCountAssessmentRequestsArgs
+    assignedRequests?: boolean | UserCountOutputTypeCountAssignedRequestsArgs
     assignedSessions?: boolean | UserCountOutputTypeCountAssignedSessionsArgs
     patientSessions?: boolean | UserCountOutputTypeCountPatientSessionsArgs
     authoredClinicalReports?: boolean | UserCountOutputTypeCountAuthoredClinicalReportsArgs
@@ -3634,6 +3636,13 @@ export namespace Prisma {
    * UserCountOutputType without action
    */
   export type UserCountOutputTypeCountAssessmentRequestsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: AssessmentRequestWhereInput
+  }
+
+  /**
+   * UserCountOutputType without action
+   */
+  export type UserCountOutputTypeCountAssignedRequestsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     where?: AssessmentRequestWhereInput
   }
 
@@ -4264,13 +4273,25 @@ export namespace Prisma {
 
   export type AggregateAppSettings = {
     _count: AppSettingsCountAggregateOutputType | null
+    _avg: AppSettingsAvgAggregateOutputType | null
+    _sum: AppSettingsSumAggregateOutputType | null
     _min: AppSettingsMinAggregateOutputType | null
     _max: AppSettingsMaxAggregateOutputType | null
+  }
+
+  export type AppSettingsAvgAggregateOutputType = {
+    defaultAmount: Decimal | null
+  }
+
+  export type AppSettingsSumAggregateOutputType = {
+    defaultAmount: Decimal | null
   }
 
   export type AppSettingsMinAggregateOutputType = {
     id: string | null
     billingMode: string | null
+    defaultCurrency: string | null
+    defaultAmount: Decimal | null
     updatedByUserId: string | null
     updatedAt: Date | null
   }
@@ -4278,6 +4299,8 @@ export namespace Prisma {
   export type AppSettingsMaxAggregateOutputType = {
     id: string | null
     billingMode: string | null
+    defaultCurrency: string | null
+    defaultAmount: Decimal | null
     updatedByUserId: string | null
     updatedAt: Date | null
   }
@@ -4285,15 +4308,27 @@ export namespace Prisma {
   export type AppSettingsCountAggregateOutputType = {
     id: number
     billingMode: number
+    defaultCurrency: number
+    defaultAmount: number
     updatedByUserId: number
     updatedAt: number
     _all: number
   }
 
 
+  export type AppSettingsAvgAggregateInputType = {
+    defaultAmount?: true
+  }
+
+  export type AppSettingsSumAggregateInputType = {
+    defaultAmount?: true
+  }
+
   export type AppSettingsMinAggregateInputType = {
     id?: true
     billingMode?: true
+    defaultCurrency?: true
+    defaultAmount?: true
     updatedByUserId?: true
     updatedAt?: true
   }
@@ -4301,6 +4336,8 @@ export namespace Prisma {
   export type AppSettingsMaxAggregateInputType = {
     id?: true
     billingMode?: true
+    defaultCurrency?: true
+    defaultAmount?: true
     updatedByUserId?: true
     updatedAt?: true
   }
@@ -4308,6 +4345,8 @@ export namespace Prisma {
   export type AppSettingsCountAggregateInputType = {
     id?: true
     billingMode?: true
+    defaultCurrency?: true
+    defaultAmount?: true
     updatedByUserId?: true
     updatedAt?: true
     _all?: true
@@ -4351,6 +4390,18 @@ export namespace Prisma {
     /**
      * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
      * 
+     * Select which fields to average
+    **/
+    _avg?: AppSettingsAvgAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to sum
+    **/
+    _sum?: AppSettingsSumAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
      * Select which fields to find the minimum value
     **/
     _min?: AppSettingsMinAggregateInputType
@@ -4381,6 +4432,8 @@ export namespace Prisma {
     take?: number
     skip?: number
     _count?: AppSettingsCountAggregateInputType | true
+    _avg?: AppSettingsAvgAggregateInputType
+    _sum?: AppSettingsSumAggregateInputType
     _min?: AppSettingsMinAggregateInputType
     _max?: AppSettingsMaxAggregateInputType
   }
@@ -4388,9 +4441,13 @@ export namespace Prisma {
   export type AppSettingsGroupByOutputType = {
     id: string
     billingMode: string
+    defaultCurrency: string
+    defaultAmount: Decimal | null
     updatedByUserId: string | null
     updatedAt: Date
     _count: AppSettingsCountAggregateOutputType | null
+    _avg: AppSettingsAvgAggregateOutputType | null
+    _sum: AppSettingsSumAggregateOutputType | null
     _min: AppSettingsMinAggregateOutputType | null
     _max: AppSettingsMaxAggregateOutputType | null
   }
@@ -4412,6 +4469,8 @@ export namespace Prisma {
   export type AppSettingsSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     billingMode?: boolean
+    defaultCurrency?: boolean
+    defaultAmount?: boolean
     updatedByUserId?: boolean
     updatedAt?: boolean
     updatedBy?: boolean | AppSettings$updatedByArgs<ExtArgs>
@@ -4420,6 +4479,8 @@ export namespace Prisma {
   export type AppSettingsSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     billingMode?: boolean
+    defaultCurrency?: boolean
+    defaultAmount?: boolean
     updatedByUserId?: boolean
     updatedAt?: boolean
     updatedBy?: boolean | AppSettings$updatedByArgs<ExtArgs>
@@ -4428,6 +4489,8 @@ export namespace Prisma {
   export type AppSettingsSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
     id?: boolean
     billingMode?: boolean
+    defaultCurrency?: boolean
+    defaultAmount?: boolean
     updatedByUserId?: boolean
     updatedAt?: boolean
     updatedBy?: boolean | AppSettings$updatedByArgs<ExtArgs>
@@ -4436,11 +4499,13 @@ export namespace Prisma {
   export type AppSettingsSelectScalar = {
     id?: boolean
     billingMode?: boolean
+    defaultCurrency?: boolean
+    defaultAmount?: boolean
     updatedByUserId?: boolean
     updatedAt?: boolean
   }
 
-  export type AppSettingsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "billingMode" | "updatedByUserId" | "updatedAt", ExtArgs["result"]["appSettings"]>
+  export type AppSettingsOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "billingMode" | "defaultCurrency" | "defaultAmount" | "updatedByUserId" | "updatedAt", ExtArgs["result"]["appSettings"]>
   export type AppSettingsInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     updatedBy?: boolean | AppSettings$updatedByArgs<ExtArgs>
   }
@@ -4459,6 +4524,8 @@ export namespace Prisma {
     scalars: $Extensions.GetPayloadResult<{
       id: string
       billingMode: string
+      defaultCurrency: string
+      defaultAmount: Prisma.Decimal | null
       updatedByUserId: string | null
       updatedAt: Date
     }, ExtArgs["result"]["appSettings"]>
@@ -4887,6 +4954,8 @@ export namespace Prisma {
   interface AppSettingsFieldRefs {
     readonly id: FieldRef<"AppSettings", 'String'>
     readonly billingMode: FieldRef<"AppSettings", 'String'>
+    readonly defaultCurrency: FieldRef<"AppSettings", 'String'>
+    readonly defaultAmount: FieldRef<"AppSettings", 'Decimal'>
     readonly updatedByUserId: FieldRef<"AppSettings", 'String'>
     readonly updatedAt: FieldRef<"AppSettings", 'DateTime'>
   }
@@ -5506,6 +5575,7 @@ export namespace Prisma {
     patientProfile?: boolean | User$patientProfileArgs<ExtArgs>
     doctorProfile?: boolean | User$doctorProfileArgs<ExtArgs>
     assessmentRequests?: boolean | User$assessmentRequestsArgs<ExtArgs>
+    assignedRequests?: boolean | User$assignedRequestsArgs<ExtArgs>
     assignedSessions?: boolean | User$assignedSessionsArgs<ExtArgs>
     patientSessions?: boolean | User$patientSessionsArgs<ExtArgs>
     authoredClinicalReports?: boolean | User$authoredClinicalReportsArgs<ExtArgs>
@@ -5551,6 +5621,7 @@ export namespace Prisma {
     patientProfile?: boolean | User$patientProfileArgs<ExtArgs>
     doctorProfile?: boolean | User$doctorProfileArgs<ExtArgs>
     assessmentRequests?: boolean | User$assessmentRequestsArgs<ExtArgs>
+    assignedRequests?: boolean | User$assignedRequestsArgs<ExtArgs>
     assignedSessions?: boolean | User$assignedSessionsArgs<ExtArgs>
     patientSessions?: boolean | User$patientSessionsArgs<ExtArgs>
     authoredClinicalReports?: boolean | User$authoredClinicalReportsArgs<ExtArgs>
@@ -5569,6 +5640,7 @@ export namespace Prisma {
       patientProfile: Prisma.$PatientProfilePayload<ExtArgs> | null
       doctorProfile: Prisma.$DoctorProfilePayload<ExtArgs> | null
       assessmentRequests: Prisma.$AssessmentRequestPayload<ExtArgs>[]
+      assignedRequests: Prisma.$AssessmentRequestPayload<ExtArgs>[]
       assignedSessions: Prisma.$ExamSessionPayload<ExtArgs>[]
       patientSessions: Prisma.$ExamSessionPayload<ExtArgs>[]
       authoredClinicalReports: Prisma.$ClinicalReportPayload<ExtArgs>[]
@@ -5982,6 +6054,7 @@ export namespace Prisma {
     patientProfile<T extends User$patientProfileArgs<ExtArgs> = {}>(args?: Subset<T, User$patientProfileArgs<ExtArgs>>): Prisma__PatientProfileClient<$Result.GetResult<Prisma.$PatientProfilePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     doctorProfile<T extends User$doctorProfileArgs<ExtArgs> = {}>(args?: Subset<T, User$doctorProfileArgs<ExtArgs>>): Prisma__DoctorProfileClient<$Result.GetResult<Prisma.$DoctorProfilePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     assessmentRequests<T extends User$assessmentRequestsArgs<ExtArgs> = {}>(args?: Subset<T, User$assessmentRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AssessmentRequestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+    assignedRequests<T extends User$assignedRequestsArgs<ExtArgs> = {}>(args?: Subset<T, User$assignedRequestsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$AssessmentRequestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     assignedSessions<T extends User$assignedSessionsArgs<ExtArgs> = {}>(args?: Subset<T, User$assignedSessionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ExamSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     patientSessions<T extends User$patientSessionsArgs<ExtArgs> = {}>(args?: Subset<T, User$patientSessionsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ExamSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
     authoredClinicalReports<T extends User$authoredClinicalReportsArgs<ExtArgs> = {}>(args?: Subset<T, User$authoredClinicalReportsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$ClinicalReportPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -6477,6 +6550,30 @@ export namespace Prisma {
    * User.assessmentRequests
    */
   export type User$assessmentRequestsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the AssessmentRequest
+     */
+    select?: AssessmentRequestSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the AssessmentRequest
+     */
+    omit?: AssessmentRequestOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: AssessmentRequestInclude<ExtArgs> | null
+    where?: AssessmentRequestWhereInput
+    orderBy?: AssessmentRequestOrderByWithRelationInput | AssessmentRequestOrderByWithRelationInput[]
+    cursor?: AssessmentRequestWhereUniqueInput
+    take?: number
+    skip?: number
+    distinct?: AssessmentRequestScalarFieldEnum | AssessmentRequestScalarFieldEnum[]
+  }
+
+  /**
+   * User.assignedRequests
+   */
+  export type User$assignedRequestsArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     /**
      * Select specific fields to fetch from the AssessmentRequest
      */
@@ -21271,10 +21368,13 @@ export namespace Prisma {
     patientUserId: string | null
     assessmentTypeId: string | null
     requestStatus: string | null
+    billingModeSnapshot: string | null
     paymentRequirement: string | null
     paymentSatisfied: boolean | null
     activePaymentId: string | null
+    doctorUserId: string | null
     purpose: string | null
+    adminNote: string | null
     requestedAt: Date | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -21285,10 +21385,13 @@ export namespace Prisma {
     patientUserId: string | null
     assessmentTypeId: string | null
     requestStatus: string | null
+    billingModeSnapshot: string | null
     paymentRequirement: string | null
     paymentSatisfied: boolean | null
     activePaymentId: string | null
+    doctorUserId: string | null
     purpose: string | null
+    adminNote: string | null
     requestedAt: Date | null
     createdAt: Date | null
     updatedAt: Date | null
@@ -21299,10 +21402,13 @@ export namespace Prisma {
     patientUserId: number
     assessmentTypeId: number
     requestStatus: number
+    billingModeSnapshot: number
     paymentRequirement: number
     paymentSatisfied: number
     activePaymentId: number
+    doctorUserId: number
     purpose: number
+    adminNote: number
     requestedAt: number
     createdAt: number
     updatedAt: number
@@ -21315,10 +21421,13 @@ export namespace Prisma {
     patientUserId?: true
     assessmentTypeId?: true
     requestStatus?: true
+    billingModeSnapshot?: true
     paymentRequirement?: true
     paymentSatisfied?: true
     activePaymentId?: true
+    doctorUserId?: true
     purpose?: true
+    adminNote?: true
     requestedAt?: true
     createdAt?: true
     updatedAt?: true
@@ -21329,10 +21438,13 @@ export namespace Prisma {
     patientUserId?: true
     assessmentTypeId?: true
     requestStatus?: true
+    billingModeSnapshot?: true
     paymentRequirement?: true
     paymentSatisfied?: true
     activePaymentId?: true
+    doctorUserId?: true
     purpose?: true
+    adminNote?: true
     requestedAt?: true
     createdAt?: true
     updatedAt?: true
@@ -21343,10 +21455,13 @@ export namespace Prisma {
     patientUserId?: true
     assessmentTypeId?: true
     requestStatus?: true
+    billingModeSnapshot?: true
     paymentRequirement?: true
     paymentSatisfied?: true
     activePaymentId?: true
+    doctorUserId?: true
     purpose?: true
+    adminNote?: true
     requestedAt?: true
     createdAt?: true
     updatedAt?: true
@@ -21430,10 +21545,13 @@ export namespace Prisma {
     patientUserId: string
     assessmentTypeId: string
     requestStatus: string
+    billingModeSnapshot: string | null
     paymentRequirement: string
     paymentSatisfied: boolean
     activePaymentId: string | null
+    doctorUserId: string | null
     purpose: string | null
+    adminNote: string | null
     requestedAt: Date
     createdAt: Date
     updatedAt: Date
@@ -21461,14 +21579,18 @@ export namespace Prisma {
     patientUserId?: boolean
     assessmentTypeId?: boolean
     requestStatus?: boolean
+    billingModeSnapshot?: boolean
     paymentRequirement?: boolean
     paymentSatisfied?: boolean
     activePaymentId?: boolean
+    doctorUserId?: boolean
     purpose?: boolean
+    adminNote?: boolean
     requestedAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     patient?: boolean | UserDefaultArgs<ExtArgs>
+    assignedDoctor?: boolean | AssessmentRequest$assignedDoctorArgs<ExtArgs>
     assessmentType?: boolean | AssessmentTypeDefaultArgs<ExtArgs>
     activePayment?: boolean | AssessmentRequest$activePaymentArgs<ExtArgs>
     payments?: boolean | AssessmentRequest$paymentsArgs<ExtArgs>
@@ -21481,14 +21603,18 @@ export namespace Prisma {
     patientUserId?: boolean
     assessmentTypeId?: boolean
     requestStatus?: boolean
+    billingModeSnapshot?: boolean
     paymentRequirement?: boolean
     paymentSatisfied?: boolean
     activePaymentId?: boolean
+    doctorUserId?: boolean
     purpose?: boolean
+    adminNote?: boolean
     requestedAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     patient?: boolean | UserDefaultArgs<ExtArgs>
+    assignedDoctor?: boolean | AssessmentRequest$assignedDoctorArgs<ExtArgs>
     assessmentType?: boolean | AssessmentTypeDefaultArgs<ExtArgs>
     activePayment?: boolean | AssessmentRequest$activePaymentArgs<ExtArgs>
   }, ExtArgs["result"]["assessmentRequest"]>
@@ -21498,14 +21624,18 @@ export namespace Prisma {
     patientUserId?: boolean
     assessmentTypeId?: boolean
     requestStatus?: boolean
+    billingModeSnapshot?: boolean
     paymentRequirement?: boolean
     paymentSatisfied?: boolean
     activePaymentId?: boolean
+    doctorUserId?: boolean
     purpose?: boolean
+    adminNote?: boolean
     requestedAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
     patient?: boolean | UserDefaultArgs<ExtArgs>
+    assignedDoctor?: boolean | AssessmentRequest$assignedDoctorArgs<ExtArgs>
     assessmentType?: boolean | AssessmentTypeDefaultArgs<ExtArgs>
     activePayment?: boolean | AssessmentRequest$activePaymentArgs<ExtArgs>
   }, ExtArgs["result"]["assessmentRequest"]>
@@ -21515,18 +21645,22 @@ export namespace Prisma {
     patientUserId?: boolean
     assessmentTypeId?: boolean
     requestStatus?: boolean
+    billingModeSnapshot?: boolean
     paymentRequirement?: boolean
     paymentSatisfied?: boolean
     activePaymentId?: boolean
+    doctorUserId?: boolean
     purpose?: boolean
+    adminNote?: boolean
     requestedAt?: boolean
     createdAt?: boolean
     updatedAt?: boolean
   }
 
-  export type AssessmentRequestOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "patientUserId" | "assessmentTypeId" | "requestStatus" | "paymentRequirement" | "paymentSatisfied" | "activePaymentId" | "purpose" | "requestedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["assessmentRequest"]>
+  export type AssessmentRequestOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "patientUserId" | "assessmentTypeId" | "requestStatus" | "billingModeSnapshot" | "paymentRequirement" | "paymentSatisfied" | "activePaymentId" | "doctorUserId" | "purpose" | "adminNote" | "requestedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["assessmentRequest"]>
   export type AssessmentRequestInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     patient?: boolean | UserDefaultArgs<ExtArgs>
+    assignedDoctor?: boolean | AssessmentRequest$assignedDoctorArgs<ExtArgs>
     assessmentType?: boolean | AssessmentTypeDefaultArgs<ExtArgs>
     activePayment?: boolean | AssessmentRequest$activePaymentArgs<ExtArgs>
     payments?: boolean | AssessmentRequest$paymentsArgs<ExtArgs>
@@ -21535,11 +21669,13 @@ export namespace Prisma {
   }
   export type AssessmentRequestIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     patient?: boolean | UserDefaultArgs<ExtArgs>
+    assignedDoctor?: boolean | AssessmentRequest$assignedDoctorArgs<ExtArgs>
     assessmentType?: boolean | AssessmentTypeDefaultArgs<ExtArgs>
     activePayment?: boolean | AssessmentRequest$activePaymentArgs<ExtArgs>
   }
   export type AssessmentRequestIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     patient?: boolean | UserDefaultArgs<ExtArgs>
+    assignedDoctor?: boolean | AssessmentRequest$assignedDoctorArgs<ExtArgs>
     assessmentType?: boolean | AssessmentTypeDefaultArgs<ExtArgs>
     activePayment?: boolean | AssessmentRequest$activePaymentArgs<ExtArgs>
   }
@@ -21548,6 +21684,7 @@ export namespace Prisma {
     name: "AssessmentRequest"
     objects: {
       patient: Prisma.$UserPayload<ExtArgs>
+      assignedDoctor: Prisma.$UserPayload<ExtArgs> | null
       assessmentType: Prisma.$AssessmentTypePayload<ExtArgs>
       activePayment: Prisma.$PaymentPayload<ExtArgs> | null
       payments: Prisma.$PaymentPayload<ExtArgs>[]
@@ -21558,10 +21695,13 @@ export namespace Prisma {
       patientUserId: string
       assessmentTypeId: string
       requestStatus: string
+      billingModeSnapshot: string | null
       paymentRequirement: string
       paymentSatisfied: boolean
       activePaymentId: string | null
+      doctorUserId: string | null
       purpose: string | null
+      adminNote: string | null
       requestedAt: Date
       createdAt: Date
       updatedAt: Date
@@ -21960,6 +22100,7 @@ export namespace Prisma {
   export interface Prisma__AssessmentRequestClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     patient<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    assignedDoctor<T extends AssessmentRequest$assignedDoctorArgs<ExtArgs> = {}>(args?: Subset<T, AssessmentRequest$assignedDoctorArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     assessmentType<T extends AssessmentTypeDefaultArgs<ExtArgs> = {}>(args?: Subset<T, AssessmentTypeDefaultArgs<ExtArgs>>): Prisma__AssessmentTypeClient<$Result.GetResult<Prisma.$AssessmentTypePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     activePayment<T extends AssessmentRequest$activePaymentArgs<ExtArgs> = {}>(args?: Subset<T, AssessmentRequest$activePaymentArgs<ExtArgs>>): Prisma__PaymentClient<$Result.GetResult<Prisma.$PaymentPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     payments<T extends AssessmentRequest$paymentsArgs<ExtArgs> = {}>(args?: Subset<T, AssessmentRequest$paymentsArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$PaymentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -21997,10 +22138,13 @@ export namespace Prisma {
     readonly patientUserId: FieldRef<"AssessmentRequest", 'String'>
     readonly assessmentTypeId: FieldRef<"AssessmentRequest", 'String'>
     readonly requestStatus: FieldRef<"AssessmentRequest", 'String'>
+    readonly billingModeSnapshot: FieldRef<"AssessmentRequest", 'String'>
     readonly paymentRequirement: FieldRef<"AssessmentRequest", 'String'>
     readonly paymentSatisfied: FieldRef<"AssessmentRequest", 'Boolean'>
     readonly activePaymentId: FieldRef<"AssessmentRequest", 'String'>
+    readonly doctorUserId: FieldRef<"AssessmentRequest", 'String'>
     readonly purpose: FieldRef<"AssessmentRequest", 'String'>
+    readonly adminNote: FieldRef<"AssessmentRequest", 'String'>
     readonly requestedAt: FieldRef<"AssessmentRequest", 'DateTime'>
     readonly createdAt: FieldRef<"AssessmentRequest", 'DateTime'>
     readonly updatedAt: FieldRef<"AssessmentRequest", 'DateTime'>
@@ -22400,6 +22544,25 @@ export namespace Prisma {
   }
 
   /**
+   * AssessmentRequest.assignedDoctor
+   */
+  export type AssessmentRequest$assignedDoctorArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the User
+     */
+    select?: UserSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the User
+     */
+    omit?: UserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserInclude<ExtArgs> | null
+    where?: UserWhereInput
+  }
+
+  /**
    * AssessmentRequest.activePayment
    */
   export type AssessmentRequest$activePaymentArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
@@ -22705,7 +22868,7 @@ export namespace Prisma {
     id: string
     assessmentRequestId: string
     patientUserId: string
-    doctorUserId: string
+    doctorUserId: string | null
     instrumentVersionId: string
     questionBankVersionId: string
     scoringConfigVersionId: string
@@ -22756,7 +22919,7 @@ export namespace Prisma {
     updatedAt?: boolean
     assessmentRequest?: boolean | AssessmentRequestDefaultArgs<ExtArgs>
     patient?: boolean | UserDefaultArgs<ExtArgs>
-    doctor?: boolean | UserDefaultArgs<ExtArgs>
+    doctor?: boolean | ExamSession$doctorArgs<ExtArgs>
     instrumentVersion?: boolean | InstrumentVersionDefaultArgs<ExtArgs>
     questionBankVersion?: boolean | QuestionBankVersionDefaultArgs<ExtArgs>
     scoringConfigVersion?: boolean | ScoringConfigVersionDefaultArgs<ExtArgs>
@@ -22785,7 +22948,7 @@ export namespace Prisma {
     updatedAt?: boolean
     assessmentRequest?: boolean | AssessmentRequestDefaultArgs<ExtArgs>
     patient?: boolean | UserDefaultArgs<ExtArgs>
-    doctor?: boolean | UserDefaultArgs<ExtArgs>
+    doctor?: boolean | ExamSession$doctorArgs<ExtArgs>
     instrumentVersion?: boolean | InstrumentVersionDefaultArgs<ExtArgs>
     questionBankVersion?: boolean | QuestionBankVersionDefaultArgs<ExtArgs>
     scoringConfigVersion?: boolean | ScoringConfigVersionDefaultArgs<ExtArgs>
@@ -22809,7 +22972,7 @@ export namespace Prisma {
     updatedAt?: boolean
     assessmentRequest?: boolean | AssessmentRequestDefaultArgs<ExtArgs>
     patient?: boolean | UserDefaultArgs<ExtArgs>
-    doctor?: boolean | UserDefaultArgs<ExtArgs>
+    doctor?: boolean | ExamSession$doctorArgs<ExtArgs>
     instrumentVersion?: boolean | InstrumentVersionDefaultArgs<ExtArgs>
     questionBankVersion?: boolean | QuestionBankVersionDefaultArgs<ExtArgs>
     scoringConfigVersion?: boolean | ScoringConfigVersionDefaultArgs<ExtArgs>
@@ -22837,7 +23000,7 @@ export namespace Prisma {
   export type ExamSessionInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     assessmentRequest?: boolean | AssessmentRequestDefaultArgs<ExtArgs>
     patient?: boolean | UserDefaultArgs<ExtArgs>
-    doctor?: boolean | UserDefaultArgs<ExtArgs>
+    doctor?: boolean | ExamSession$doctorArgs<ExtArgs>
     instrumentVersion?: boolean | InstrumentVersionDefaultArgs<ExtArgs>
     questionBankVersion?: boolean | QuestionBankVersionDefaultArgs<ExtArgs>
     scoringConfigVersion?: boolean | ScoringConfigVersionDefaultArgs<ExtArgs>
@@ -22850,7 +23013,7 @@ export namespace Prisma {
   export type ExamSessionIncludeCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     assessmentRequest?: boolean | AssessmentRequestDefaultArgs<ExtArgs>
     patient?: boolean | UserDefaultArgs<ExtArgs>
-    doctor?: boolean | UserDefaultArgs<ExtArgs>
+    doctor?: boolean | ExamSession$doctorArgs<ExtArgs>
     instrumentVersion?: boolean | InstrumentVersionDefaultArgs<ExtArgs>
     questionBankVersion?: boolean | QuestionBankVersionDefaultArgs<ExtArgs>
     scoringConfigVersion?: boolean | ScoringConfigVersionDefaultArgs<ExtArgs>
@@ -22858,7 +23021,7 @@ export namespace Prisma {
   export type ExamSessionIncludeUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     assessmentRequest?: boolean | AssessmentRequestDefaultArgs<ExtArgs>
     patient?: boolean | UserDefaultArgs<ExtArgs>
-    doctor?: boolean | UserDefaultArgs<ExtArgs>
+    doctor?: boolean | ExamSession$doctorArgs<ExtArgs>
     instrumentVersion?: boolean | InstrumentVersionDefaultArgs<ExtArgs>
     questionBankVersion?: boolean | QuestionBankVersionDefaultArgs<ExtArgs>
     scoringConfigVersion?: boolean | ScoringConfigVersionDefaultArgs<ExtArgs>
@@ -22869,7 +23032,7 @@ export namespace Prisma {
     objects: {
       assessmentRequest: Prisma.$AssessmentRequestPayload<ExtArgs>
       patient: Prisma.$UserPayload<ExtArgs>
-      doctor: Prisma.$UserPayload<ExtArgs>
+      doctor: Prisma.$UserPayload<ExtArgs> | null
       instrumentVersion: Prisma.$InstrumentVersionPayload<ExtArgs>
       questionBankVersion: Prisma.$QuestionBankVersionPayload<ExtArgs>
       scoringConfigVersion: Prisma.$ScoringConfigVersionPayload<ExtArgs>
@@ -22882,7 +23045,7 @@ export namespace Prisma {
       id: string
       assessmentRequestId: string
       patientUserId: string
-      doctorUserId: string
+      doctorUserId: string | null
       instrumentVersionId: string
       questionBankVersionId: string
       scoringConfigVersionId: string
@@ -23290,7 +23453,7 @@ export namespace Prisma {
     readonly [Symbol.toStringTag]: "PrismaPromise"
     assessmentRequest<T extends AssessmentRequestDefaultArgs<ExtArgs> = {}>(args?: Subset<T, AssessmentRequestDefaultArgs<ExtArgs>>): Prisma__AssessmentRequestClient<$Result.GetResult<Prisma.$AssessmentRequestPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     patient<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
-    doctor<T extends UserDefaultArgs<ExtArgs> = {}>(args?: Subset<T, UserDefaultArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+    doctor<T extends ExamSession$doctorArgs<ExtArgs> = {}>(args?: Subset<T, ExamSession$doctorArgs<ExtArgs>>): Prisma__UserClient<$Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
     instrumentVersion<T extends InstrumentVersionDefaultArgs<ExtArgs> = {}>(args?: Subset<T, InstrumentVersionDefaultArgs<ExtArgs>>): Prisma__InstrumentVersionClient<$Result.GetResult<Prisma.$InstrumentVersionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     questionBankVersion<T extends QuestionBankVersionDefaultArgs<ExtArgs> = {}>(args?: Subset<T, QuestionBankVersionDefaultArgs<ExtArgs>>): Prisma__QuestionBankVersionClient<$Result.GetResult<Prisma.$QuestionBankVersionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
     scoringConfigVersion<T extends ScoringConfigVersionDefaultArgs<ExtArgs> = {}>(args?: Subset<T, ScoringConfigVersionDefaultArgs<ExtArgs>>): Prisma__ScoringConfigVersionClient<$Result.GetResult<Prisma.$ScoringConfigVersionPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
@@ -23735,6 +23898,25 @@ export namespace Prisma {
      * Limit how many ExamSessions to delete.
      */
     limit?: number
+  }
+
+  /**
+   * ExamSession.doctor
+   */
+  export type ExamSession$doctorArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the User
+     */
+    select?: UserSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the User
+     */
+    omit?: UserOmit<ExtArgs> | null
+    /**
+     * Choose, which related nodes to fetch as well
+     */
+    include?: UserInclude<ExtArgs> | null
+    where?: UserWhereInput
   }
 
   /**
@@ -39803,6 +39985,8 @@ export namespace Prisma {
   export const AppSettingsScalarFieldEnum: {
     id: 'id',
     billingMode: 'billingMode',
+    defaultCurrency: 'defaultCurrency',
+    defaultAmount: 'defaultAmount',
     updatedByUserId: 'updatedByUserId',
     updatedAt: 'updatedAt'
   };
@@ -39989,10 +40173,13 @@ export namespace Prisma {
     patientUserId: 'patientUserId',
     assessmentTypeId: 'assessmentTypeId',
     requestStatus: 'requestStatus',
+    billingModeSnapshot: 'billingModeSnapshot',
     paymentRequirement: 'paymentRequirement',
     paymentSatisfied: 'paymentSatisfied',
     activePaymentId: 'activePaymentId',
+    doctorUserId: 'doctorUserId',
     purpose: 'purpose',
+    adminNote: 'adminNote',
     requestedAt: 'requestedAt',
     createdAt: 'createdAt',
     updatedAt: 'updatedAt'
@@ -40278,6 +40465,20 @@ export namespace Prisma {
 
 
   /**
+   * Reference to a field of type 'Decimal'
+   */
+  export type DecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal'>
+    
+
+
+  /**
+   * Reference to a field of type 'Decimal[]'
+   */
+  export type ListDecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal[]'>
+    
+
+
+  /**
    * Reference to a field of type 'DateTime'
    */
   export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
@@ -40327,20 +40528,6 @@ export namespace Prisma {
 
 
   /**
-   * Reference to a field of type 'Decimal'
-   */
-  export type DecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal'>
-    
-
-
-  /**
-   * Reference to a field of type 'Decimal[]'
-   */
-  export type ListDecimalFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Decimal[]'>
-    
-
-
-  /**
    * Reference to a field of type 'Float'
    */
   export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
@@ -40363,6 +40550,8 @@ export namespace Prisma {
     NOT?: AppSettingsWhereInput | AppSettingsWhereInput[]
     id?: StringFilter<"AppSettings"> | string
     billingMode?: StringFilter<"AppSettings"> | string
+    defaultCurrency?: StringFilter<"AppSettings"> | string
+    defaultAmount?: DecimalNullableFilter<"AppSettings"> | Decimal | DecimalJsLike | number | string | null
     updatedByUserId?: StringNullableFilter<"AppSettings"> | string | null
     updatedAt?: DateTimeFilter<"AppSettings"> | Date | string
     updatedBy?: XOR<UserNullableScalarRelationFilter, UserWhereInput> | null
@@ -40371,6 +40560,8 @@ export namespace Prisma {
   export type AppSettingsOrderByWithRelationInput = {
     id?: SortOrder
     billingMode?: SortOrder
+    defaultCurrency?: SortOrder
+    defaultAmount?: SortOrderInput | SortOrder
     updatedByUserId?: SortOrderInput | SortOrder
     updatedAt?: SortOrder
     updatedBy?: UserOrderByWithRelationInput
@@ -40382,6 +40573,8 @@ export namespace Prisma {
     OR?: AppSettingsWhereInput[]
     NOT?: AppSettingsWhereInput | AppSettingsWhereInput[]
     billingMode?: StringFilter<"AppSettings"> | string
+    defaultCurrency?: StringFilter<"AppSettings"> | string
+    defaultAmount?: DecimalNullableFilter<"AppSettings"> | Decimal | DecimalJsLike | number | string | null
     updatedByUserId?: StringNullableFilter<"AppSettings"> | string | null
     updatedAt?: DateTimeFilter<"AppSettings"> | Date | string
     updatedBy?: XOR<UserNullableScalarRelationFilter, UserWhereInput> | null
@@ -40390,11 +40583,15 @@ export namespace Prisma {
   export type AppSettingsOrderByWithAggregationInput = {
     id?: SortOrder
     billingMode?: SortOrder
+    defaultCurrency?: SortOrder
+    defaultAmount?: SortOrderInput | SortOrder
     updatedByUserId?: SortOrderInput | SortOrder
     updatedAt?: SortOrder
     _count?: AppSettingsCountOrderByAggregateInput
+    _avg?: AppSettingsAvgOrderByAggregateInput
     _max?: AppSettingsMaxOrderByAggregateInput
     _min?: AppSettingsMinOrderByAggregateInput
+    _sum?: AppSettingsSumOrderByAggregateInput
   }
 
   export type AppSettingsScalarWhereWithAggregatesInput = {
@@ -40403,6 +40600,8 @@ export namespace Prisma {
     NOT?: AppSettingsScalarWhereWithAggregatesInput | AppSettingsScalarWhereWithAggregatesInput[]
     id?: StringWithAggregatesFilter<"AppSettings"> | string
     billingMode?: StringWithAggregatesFilter<"AppSettings"> | string
+    defaultCurrency?: StringWithAggregatesFilter<"AppSettings"> | string
+    defaultAmount?: DecimalNullableWithAggregatesFilter<"AppSettings"> | Decimal | DecimalJsLike | number | string | null
     updatedByUserId?: StringNullableWithAggregatesFilter<"AppSettings"> | string | null
     updatedAt?: DateTimeWithAggregatesFilter<"AppSettings"> | Date | string
   }
@@ -40422,6 +40621,7 @@ export namespace Prisma {
     patientProfile?: XOR<PatientProfileNullableScalarRelationFilter, PatientProfileWhereInput> | null
     doctorProfile?: XOR<DoctorProfileNullableScalarRelationFilter, DoctorProfileWhereInput> | null
     assessmentRequests?: AssessmentRequestListRelationFilter
+    assignedRequests?: AssessmentRequestListRelationFilter
     assignedSessions?: ExamSessionListRelationFilter
     patientSessions?: ExamSessionListRelationFilter
     authoredClinicalReports?: ClinicalReportListRelationFilter
@@ -40442,6 +40642,7 @@ export namespace Prisma {
     patientProfile?: PatientProfileOrderByWithRelationInput
     doctorProfile?: DoctorProfileOrderByWithRelationInput
     assessmentRequests?: AssessmentRequestOrderByRelationAggregateInput
+    assignedRequests?: AssessmentRequestOrderByRelationAggregateInput
     assignedSessions?: ExamSessionOrderByRelationAggregateInput
     patientSessions?: ExamSessionOrderByRelationAggregateInput
     authoredClinicalReports?: ClinicalReportOrderByRelationAggregateInput
@@ -40465,6 +40666,7 @@ export namespace Prisma {
     patientProfile?: XOR<PatientProfileNullableScalarRelationFilter, PatientProfileWhereInput> | null
     doctorProfile?: XOR<DoctorProfileNullableScalarRelationFilter, DoctorProfileWhereInput> | null
     assessmentRequests?: AssessmentRequestListRelationFilter
+    assignedRequests?: AssessmentRequestListRelationFilter
     assignedSessions?: ExamSessionListRelationFilter
     patientSessions?: ExamSessionListRelationFilter
     authoredClinicalReports?: ClinicalReportListRelationFilter
@@ -41376,14 +41578,18 @@ export namespace Prisma {
     patientUserId?: StringFilter<"AssessmentRequest"> | string
     assessmentTypeId?: StringFilter<"AssessmentRequest"> | string
     requestStatus?: StringFilter<"AssessmentRequest"> | string
+    billingModeSnapshot?: StringNullableFilter<"AssessmentRequest"> | string | null
     paymentRequirement?: StringFilter<"AssessmentRequest"> | string
     paymentSatisfied?: BoolFilter<"AssessmentRequest"> | boolean
     activePaymentId?: StringNullableFilter<"AssessmentRequest"> | string | null
+    doctorUserId?: StringNullableFilter<"AssessmentRequest"> | string | null
     purpose?: StringNullableFilter<"AssessmentRequest"> | string | null
+    adminNote?: StringNullableFilter<"AssessmentRequest"> | string | null
     requestedAt?: DateTimeFilter<"AssessmentRequest"> | Date | string
     createdAt?: DateTimeFilter<"AssessmentRequest"> | Date | string
     updatedAt?: DateTimeFilter<"AssessmentRequest"> | Date | string
     patient?: XOR<UserScalarRelationFilter, UserWhereInput>
+    assignedDoctor?: XOR<UserNullableScalarRelationFilter, UserWhereInput> | null
     assessmentType?: XOR<AssessmentTypeScalarRelationFilter, AssessmentTypeWhereInput>
     activePayment?: XOR<PaymentNullableScalarRelationFilter, PaymentWhereInput> | null
     payments?: PaymentListRelationFilter
@@ -41395,14 +41601,18 @@ export namespace Prisma {
     patientUserId?: SortOrder
     assessmentTypeId?: SortOrder
     requestStatus?: SortOrder
+    billingModeSnapshot?: SortOrderInput | SortOrder
     paymentRequirement?: SortOrder
     paymentSatisfied?: SortOrder
     activePaymentId?: SortOrderInput | SortOrder
+    doctorUserId?: SortOrderInput | SortOrder
     purpose?: SortOrderInput | SortOrder
+    adminNote?: SortOrderInput | SortOrder
     requestedAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
     patient?: UserOrderByWithRelationInput
+    assignedDoctor?: UserOrderByWithRelationInput
     assessmentType?: AssessmentTypeOrderByWithRelationInput
     activePayment?: PaymentOrderByWithRelationInput
     payments?: PaymentOrderByRelationAggregateInput
@@ -41418,13 +41628,17 @@ export namespace Prisma {
     patientUserId?: StringFilter<"AssessmentRequest"> | string
     assessmentTypeId?: StringFilter<"AssessmentRequest"> | string
     requestStatus?: StringFilter<"AssessmentRequest"> | string
+    billingModeSnapshot?: StringNullableFilter<"AssessmentRequest"> | string | null
     paymentRequirement?: StringFilter<"AssessmentRequest"> | string
     paymentSatisfied?: BoolFilter<"AssessmentRequest"> | boolean
+    doctorUserId?: StringNullableFilter<"AssessmentRequest"> | string | null
     purpose?: StringNullableFilter<"AssessmentRequest"> | string | null
+    adminNote?: StringNullableFilter<"AssessmentRequest"> | string | null
     requestedAt?: DateTimeFilter<"AssessmentRequest"> | Date | string
     createdAt?: DateTimeFilter<"AssessmentRequest"> | Date | string
     updatedAt?: DateTimeFilter<"AssessmentRequest"> | Date | string
     patient?: XOR<UserScalarRelationFilter, UserWhereInput>
+    assignedDoctor?: XOR<UserNullableScalarRelationFilter, UserWhereInput> | null
     assessmentType?: XOR<AssessmentTypeScalarRelationFilter, AssessmentTypeWhereInput>
     activePayment?: XOR<PaymentNullableScalarRelationFilter, PaymentWhereInput> | null
     payments?: PaymentListRelationFilter
@@ -41436,10 +41650,13 @@ export namespace Prisma {
     patientUserId?: SortOrder
     assessmentTypeId?: SortOrder
     requestStatus?: SortOrder
+    billingModeSnapshot?: SortOrderInput | SortOrder
     paymentRequirement?: SortOrder
     paymentSatisfied?: SortOrder
     activePaymentId?: SortOrderInput | SortOrder
+    doctorUserId?: SortOrderInput | SortOrder
     purpose?: SortOrderInput | SortOrder
+    adminNote?: SortOrderInput | SortOrder
     requestedAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -41456,10 +41673,13 @@ export namespace Prisma {
     patientUserId?: StringWithAggregatesFilter<"AssessmentRequest"> | string
     assessmentTypeId?: StringWithAggregatesFilter<"AssessmentRequest"> | string
     requestStatus?: StringWithAggregatesFilter<"AssessmentRequest"> | string
+    billingModeSnapshot?: StringNullableWithAggregatesFilter<"AssessmentRequest"> | string | null
     paymentRequirement?: StringWithAggregatesFilter<"AssessmentRequest"> | string
     paymentSatisfied?: BoolWithAggregatesFilter<"AssessmentRequest"> | boolean
     activePaymentId?: StringNullableWithAggregatesFilter<"AssessmentRequest"> | string | null
+    doctorUserId?: StringNullableWithAggregatesFilter<"AssessmentRequest"> | string | null
     purpose?: StringNullableWithAggregatesFilter<"AssessmentRequest"> | string | null
+    adminNote?: StringNullableWithAggregatesFilter<"AssessmentRequest"> | string | null
     requestedAt?: DateTimeWithAggregatesFilter<"AssessmentRequest"> | Date | string
     createdAt?: DateTimeWithAggregatesFilter<"AssessmentRequest"> | Date | string
     updatedAt?: DateTimeWithAggregatesFilter<"AssessmentRequest"> | Date | string
@@ -41472,7 +41692,7 @@ export namespace Prisma {
     id?: StringFilter<"ExamSession"> | string
     assessmentRequestId?: StringFilter<"ExamSession"> | string
     patientUserId?: StringFilter<"ExamSession"> | string
-    doctorUserId?: StringFilter<"ExamSession"> | string
+    doctorUserId?: StringNullableFilter<"ExamSession"> | string | null
     instrumentVersionId?: StringFilter<"ExamSession"> | string
     questionBankVersionId?: StringFilter<"ExamSession"> | string
     scoringConfigVersionId?: StringFilter<"ExamSession"> | string
@@ -41486,7 +41706,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"ExamSession"> | Date | string
     assessmentRequest?: XOR<AssessmentRequestScalarRelationFilter, AssessmentRequestWhereInput>
     patient?: XOR<UserScalarRelationFilter, UserWhereInput>
-    doctor?: XOR<UserScalarRelationFilter, UserWhereInput>
+    doctor?: XOR<UserNullableScalarRelationFilter, UserWhereInput> | null
     instrumentVersion?: XOR<InstrumentVersionScalarRelationFilter, InstrumentVersionWhereInput>
     questionBankVersion?: XOR<QuestionBankVersionScalarRelationFilter, QuestionBankVersionWhereInput>
     scoringConfigVersion?: XOR<ScoringConfigVersionScalarRelationFilter, ScoringConfigVersionWhereInput>
@@ -41500,7 +41720,7 @@ export namespace Prisma {
     id?: SortOrder
     assessmentRequestId?: SortOrder
     patientUserId?: SortOrder
-    doctorUserId?: SortOrder
+    doctorUserId?: SortOrderInput | SortOrder
     instrumentVersionId?: SortOrder
     questionBankVersionId?: SortOrder
     scoringConfigVersionId?: SortOrder
@@ -41531,7 +41751,7 @@ export namespace Prisma {
     OR?: ExamSessionWhereInput[]
     NOT?: ExamSessionWhereInput | ExamSessionWhereInput[]
     patientUserId?: StringFilter<"ExamSession"> | string
-    doctorUserId?: StringFilter<"ExamSession"> | string
+    doctorUserId?: StringNullableFilter<"ExamSession"> | string | null
     instrumentVersionId?: StringFilter<"ExamSession"> | string
     questionBankVersionId?: StringFilter<"ExamSession"> | string
     scoringConfigVersionId?: StringFilter<"ExamSession"> | string
@@ -41545,7 +41765,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFilter<"ExamSession"> | Date | string
     assessmentRequest?: XOR<AssessmentRequestScalarRelationFilter, AssessmentRequestWhereInput>
     patient?: XOR<UserScalarRelationFilter, UserWhereInput>
-    doctor?: XOR<UserScalarRelationFilter, UserWhereInput>
+    doctor?: XOR<UserNullableScalarRelationFilter, UserWhereInput> | null
     instrumentVersion?: XOR<InstrumentVersionScalarRelationFilter, InstrumentVersionWhereInput>
     questionBankVersion?: XOR<QuestionBankVersionScalarRelationFilter, QuestionBankVersionWhereInput>
     scoringConfigVersion?: XOR<ScoringConfigVersionScalarRelationFilter, ScoringConfigVersionWhereInput>
@@ -41559,7 +41779,7 @@ export namespace Prisma {
     id?: SortOrder
     assessmentRequestId?: SortOrder
     patientUserId?: SortOrder
-    doctorUserId?: SortOrder
+    doctorUserId?: SortOrderInput | SortOrder
     instrumentVersionId?: SortOrder
     questionBankVersionId?: SortOrder
     scoringConfigVersionId?: SortOrder
@@ -41585,7 +41805,7 @@ export namespace Prisma {
     id?: StringWithAggregatesFilter<"ExamSession"> | string
     assessmentRequestId?: StringWithAggregatesFilter<"ExamSession"> | string
     patientUserId?: StringWithAggregatesFilter<"ExamSession"> | string
-    doctorUserId?: StringWithAggregatesFilter<"ExamSession"> | string
+    doctorUserId?: StringNullableWithAggregatesFilter<"ExamSession"> | string | null
     instrumentVersionId?: StringWithAggregatesFilter<"ExamSession"> | string
     questionBankVersionId?: StringWithAggregatesFilter<"ExamSession"> | string
     scoringConfigVersionId?: StringWithAggregatesFilter<"ExamSession"> | string
@@ -42653,6 +42873,8 @@ export namespace Prisma {
   export type AppSettingsCreateInput = {
     id?: string
     billingMode?: string
+    defaultCurrency?: string
+    defaultAmount?: Decimal | DecimalJsLike | number | string | null
     updatedAt?: Date | string
     updatedBy?: UserCreateNestedOneWithoutAppSettingsUpdatesInput
   }
@@ -42660,6 +42882,8 @@ export namespace Prisma {
   export type AppSettingsUncheckedCreateInput = {
     id?: string
     billingMode?: string
+    defaultCurrency?: string
+    defaultAmount?: Decimal | DecimalJsLike | number | string | null
     updatedByUserId?: string | null
     updatedAt?: Date | string
   }
@@ -42667,6 +42891,8 @@ export namespace Prisma {
   export type AppSettingsUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     billingMode?: StringFieldUpdateOperationsInput | string
+    defaultCurrency?: StringFieldUpdateOperationsInput | string
+    defaultAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedBy?: UserUpdateOneWithoutAppSettingsUpdatesNestedInput
   }
@@ -42674,6 +42900,8 @@ export namespace Prisma {
   export type AppSettingsUncheckedUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     billingMode?: StringFieldUpdateOperationsInput | string
+    defaultCurrency?: StringFieldUpdateOperationsInput | string
+    defaultAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     updatedByUserId?: NullableStringFieldUpdateOperationsInput | string | null
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -42681,6 +42909,8 @@ export namespace Prisma {
   export type AppSettingsCreateManyInput = {
     id?: string
     billingMode?: string
+    defaultCurrency?: string
+    defaultAmount?: Decimal | DecimalJsLike | number | string | null
     updatedByUserId?: string | null
     updatedAt?: Date | string
   }
@@ -42688,12 +42918,16 @@ export namespace Prisma {
   export type AppSettingsUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
     billingMode?: StringFieldUpdateOperationsInput | string
+    defaultCurrency?: StringFieldUpdateOperationsInput | string
+    defaultAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type AppSettingsUncheckedUpdateManyInput = {
     id?: StringFieldUpdateOperationsInput | string
     billingMode?: StringFieldUpdateOperationsInput | string
+    defaultCurrency?: StringFieldUpdateOperationsInput | string
+    defaultAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     updatedByUserId?: NullableStringFieldUpdateOperationsInput | string | null
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
@@ -42710,6 +42944,7 @@ export namespace Prisma {
     patientProfile?: PatientProfileCreateNestedOneWithoutUserInput
     doctorProfile?: DoctorProfileCreateNestedOneWithoutUserInput
     assessmentRequests?: AssessmentRequestCreateNestedManyWithoutPatientInput
+    assignedRequests?: AssessmentRequestCreateNestedManyWithoutAssignedDoctorInput
     assignedSessions?: ExamSessionCreateNestedManyWithoutDoctorInput
     patientSessions?: ExamSessionCreateNestedManyWithoutPatientInput
     authoredClinicalReports?: ClinicalReportCreateNestedManyWithoutAuthoredByInput
@@ -42730,6 +42965,7 @@ export namespace Prisma {
     patientProfile?: PatientProfileUncheckedCreateNestedOneWithoutUserInput
     doctorProfile?: DoctorProfileUncheckedCreateNestedOneWithoutUserInput
     assessmentRequests?: AssessmentRequestUncheckedCreateNestedManyWithoutPatientInput
+    assignedRequests?: AssessmentRequestUncheckedCreateNestedManyWithoutAssignedDoctorInput
     assignedSessions?: ExamSessionUncheckedCreateNestedManyWithoutDoctorInput
     patientSessions?: ExamSessionUncheckedCreateNestedManyWithoutPatientInput
     authoredClinicalReports?: ClinicalReportUncheckedCreateNestedManyWithoutAuthoredByInput
@@ -42750,6 +42986,7 @@ export namespace Prisma {
     patientProfile?: PatientProfileUpdateOneWithoutUserNestedInput
     doctorProfile?: DoctorProfileUpdateOneWithoutUserNestedInput
     assessmentRequests?: AssessmentRequestUpdateManyWithoutPatientNestedInput
+    assignedRequests?: AssessmentRequestUpdateManyWithoutAssignedDoctorNestedInput
     assignedSessions?: ExamSessionUpdateManyWithoutDoctorNestedInput
     patientSessions?: ExamSessionUpdateManyWithoutPatientNestedInput
     authoredClinicalReports?: ClinicalReportUpdateManyWithoutAuthoredByNestedInput
@@ -42770,6 +43007,7 @@ export namespace Prisma {
     patientProfile?: PatientProfileUncheckedUpdateOneWithoutUserNestedInput
     doctorProfile?: DoctorProfileUncheckedUpdateOneWithoutUserNestedInput
     assessmentRequests?: AssessmentRequestUncheckedUpdateManyWithoutPatientNestedInput
+    assignedRequests?: AssessmentRequestUncheckedUpdateManyWithoutAssignedDoctorNestedInput
     assignedSessions?: ExamSessionUncheckedUpdateManyWithoutDoctorNestedInput
     patientSessions?: ExamSessionUncheckedUpdateManyWithoutPatientNestedInput
     authoredClinicalReports?: ClinicalReportUncheckedUpdateManyWithoutAuthoredByNestedInput
@@ -43721,13 +43959,16 @@ export namespace Prisma {
   export type AssessmentRequestCreateInput = {
     id?: string
     requestStatus?: string
+    billingModeSnapshot?: string | null
     paymentRequirement?: string
     paymentSatisfied?: boolean
     purpose?: string | null
+    adminNote?: string | null
     requestedAt?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
     patient: UserCreateNestedOneWithoutAssessmentRequestsInput
+    assignedDoctor?: UserCreateNestedOneWithoutAssignedRequestsInput
     assessmentType: AssessmentTypeCreateNestedOneWithoutAssessmentRequestsInput
     activePayment?: PaymentCreateNestedOneWithoutActiveForRequestInput
     payments?: PaymentCreateNestedManyWithoutAssessmentRequestInput
@@ -43739,10 +43980,13 @@ export namespace Prisma {
     patientUserId: string
     assessmentTypeId: string
     requestStatus?: string
+    billingModeSnapshot?: string | null
     paymentRequirement?: string
     paymentSatisfied?: boolean
     activePaymentId?: string | null
+    doctorUserId?: string | null
     purpose?: string | null
+    adminNote?: string | null
     requestedAt?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -43753,13 +43997,16 @@ export namespace Prisma {
   export type AssessmentRequestUpdateInput = {
     id?: StringFieldUpdateOperationsInput | string
     requestStatus?: StringFieldUpdateOperationsInput | string
+    billingModeSnapshot?: NullableStringFieldUpdateOperationsInput | string | null
     paymentRequirement?: StringFieldUpdateOperationsInput | string
     paymentSatisfied?: BoolFieldUpdateOperationsInput | boolean
     purpose?: NullableStringFieldUpdateOperationsInput | string | null
+    adminNote?: NullableStringFieldUpdateOperationsInput | string | null
     requestedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     patient?: UserUpdateOneRequiredWithoutAssessmentRequestsNestedInput
+    assignedDoctor?: UserUpdateOneWithoutAssignedRequestsNestedInput
     assessmentType?: AssessmentTypeUpdateOneRequiredWithoutAssessmentRequestsNestedInput
     activePayment?: PaymentUpdateOneWithoutActiveForRequestNestedInput
     payments?: PaymentUpdateManyWithoutAssessmentRequestNestedInput
@@ -43771,10 +44018,13 @@ export namespace Prisma {
     patientUserId?: StringFieldUpdateOperationsInput | string
     assessmentTypeId?: StringFieldUpdateOperationsInput | string
     requestStatus?: StringFieldUpdateOperationsInput | string
+    billingModeSnapshot?: NullableStringFieldUpdateOperationsInput | string | null
     paymentRequirement?: StringFieldUpdateOperationsInput | string
     paymentSatisfied?: BoolFieldUpdateOperationsInput | boolean
     activePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    doctorUserId?: NullableStringFieldUpdateOperationsInput | string | null
     purpose?: NullableStringFieldUpdateOperationsInput | string | null
+    adminNote?: NullableStringFieldUpdateOperationsInput | string | null
     requestedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -43787,10 +44037,13 @@ export namespace Prisma {
     patientUserId: string
     assessmentTypeId: string
     requestStatus?: string
+    billingModeSnapshot?: string | null
     paymentRequirement?: string
     paymentSatisfied?: boolean
     activePaymentId?: string | null
+    doctorUserId?: string | null
     purpose?: string | null
+    adminNote?: string | null
     requestedAt?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -43799,9 +44052,11 @@ export namespace Prisma {
   export type AssessmentRequestUpdateManyMutationInput = {
     id?: StringFieldUpdateOperationsInput | string
     requestStatus?: StringFieldUpdateOperationsInput | string
+    billingModeSnapshot?: NullableStringFieldUpdateOperationsInput | string | null
     paymentRequirement?: StringFieldUpdateOperationsInput | string
     paymentSatisfied?: BoolFieldUpdateOperationsInput | boolean
     purpose?: NullableStringFieldUpdateOperationsInput | string | null
+    adminNote?: NullableStringFieldUpdateOperationsInput | string | null
     requestedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -43812,10 +44067,13 @@ export namespace Prisma {
     patientUserId?: StringFieldUpdateOperationsInput | string
     assessmentTypeId?: StringFieldUpdateOperationsInput | string
     requestStatus?: StringFieldUpdateOperationsInput | string
+    billingModeSnapshot?: NullableStringFieldUpdateOperationsInput | string | null
     paymentRequirement?: StringFieldUpdateOperationsInput | string
     paymentSatisfied?: BoolFieldUpdateOperationsInput | boolean
     activePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    doctorUserId?: NullableStringFieldUpdateOperationsInput | string | null
     purpose?: NullableStringFieldUpdateOperationsInput | string | null
+    adminNote?: NullableStringFieldUpdateOperationsInput | string | null
     requestedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -43833,7 +44091,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     assessmentRequest: AssessmentRequestCreateNestedOneWithoutExamSessionInput
     patient: UserCreateNestedOneWithoutPatientSessionsInput
-    doctor: UserCreateNestedOneWithoutAssignedSessionsInput
+    doctor?: UserCreateNestedOneWithoutAssignedSessionsInput
     instrumentVersion: InstrumentVersionCreateNestedOneWithoutExamSessionsInput
     questionBankVersion: QuestionBankVersionCreateNestedOneWithoutExamSessionsInput
     scoringConfigVersion: ScoringConfigVersionCreateNestedOneWithoutExamSessionsInput
@@ -43847,7 +44105,7 @@ export namespace Prisma {
     id?: string
     assessmentRequestId: string
     patientUserId: string
-    doctorUserId: string
+    doctorUserId?: string | null
     instrumentVersionId: string
     questionBankVersionId: string
     scoringConfigVersionId: string
@@ -43877,7 +44135,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assessmentRequest?: AssessmentRequestUpdateOneRequiredWithoutExamSessionNestedInput
     patient?: UserUpdateOneRequiredWithoutPatientSessionsNestedInput
-    doctor?: UserUpdateOneRequiredWithoutAssignedSessionsNestedInput
+    doctor?: UserUpdateOneWithoutAssignedSessionsNestedInput
     instrumentVersion?: InstrumentVersionUpdateOneRequiredWithoutExamSessionsNestedInput
     questionBankVersion?: QuestionBankVersionUpdateOneRequiredWithoutExamSessionsNestedInput
     scoringConfigVersion?: ScoringConfigVersionUpdateOneRequiredWithoutExamSessionsNestedInput
@@ -43891,7 +44149,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     assessmentRequestId?: StringFieldUpdateOperationsInput | string
     patientUserId?: StringFieldUpdateOperationsInput | string
-    doctorUserId?: StringFieldUpdateOperationsInput | string
+    doctorUserId?: NullableStringFieldUpdateOperationsInput | string | null
     instrumentVersionId?: StringFieldUpdateOperationsInput | string
     questionBankVersionId?: StringFieldUpdateOperationsInput | string
     scoringConfigVersionId?: StringFieldUpdateOperationsInput | string
@@ -43913,7 +44171,7 @@ export namespace Prisma {
     id?: string
     assessmentRequestId: string
     patientUserId: string
-    doctorUserId: string
+    doctorUserId?: string | null
     instrumentVersionId: string
     questionBankVersionId: string
     scoringConfigVersionId: string
@@ -43943,7 +44201,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     assessmentRequestId?: StringFieldUpdateOperationsInput | string
     patientUserId?: StringFieldUpdateOperationsInput | string
-    doctorUserId?: StringFieldUpdateOperationsInput | string
+    doctorUserId?: NullableStringFieldUpdateOperationsInput | string | null
     instrumentVersionId?: StringFieldUpdateOperationsInput | string
     questionBankVersionId?: StringFieldUpdateOperationsInput | string
     scoringConfigVersionId?: StringFieldUpdateOperationsInput | string
@@ -45068,6 +45326,17 @@ export namespace Prisma {
     not?: NestedStringFilter<$PrismaModel> | string
   }
 
+  export type DecimalNullableFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalNullableFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
+  }
+
   export type StringNullableFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel> | null
     in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
@@ -45107,13 +45376,21 @@ export namespace Prisma {
   export type AppSettingsCountOrderByAggregateInput = {
     id?: SortOrder
     billingMode?: SortOrder
+    defaultCurrency?: SortOrder
+    defaultAmount?: SortOrder
     updatedByUserId?: SortOrder
     updatedAt?: SortOrder
+  }
+
+  export type AppSettingsAvgOrderByAggregateInput = {
+    defaultAmount?: SortOrder
   }
 
   export type AppSettingsMaxOrderByAggregateInput = {
     id?: SortOrder
     billingMode?: SortOrder
+    defaultCurrency?: SortOrder
+    defaultAmount?: SortOrder
     updatedByUserId?: SortOrder
     updatedAt?: SortOrder
   }
@@ -45121,8 +45398,14 @@ export namespace Prisma {
   export type AppSettingsMinOrderByAggregateInput = {
     id?: SortOrder
     billingMode?: SortOrder
+    defaultCurrency?: SortOrder
+    defaultAmount?: SortOrder
     updatedByUserId?: SortOrder
     updatedAt?: SortOrder
+  }
+
+  export type AppSettingsSumOrderByAggregateInput = {
+    defaultAmount?: SortOrder
   }
 
   export type StringWithAggregatesFilter<$PrismaModel = never> = {
@@ -45141,6 +45424,22 @@ export namespace Prisma {
     _count?: NestedIntFilter<$PrismaModel>
     _min?: NestedStringFilter<$PrismaModel>
     _max?: NestedStringFilter<$PrismaModel>
+  }
+
+  export type DecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalNullableWithAggregatesFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedDecimalNullableFilter<$PrismaModel>
+    _sum?: NestedDecimalNullableFilter<$PrismaModel>
+    _min?: NestedDecimalNullableFilter<$PrismaModel>
+    _max?: NestedDecimalNullableFilter<$PrismaModel>
   }
 
   export type StringNullableWithAggregatesFilter<$PrismaModel = never> = {
@@ -45772,17 +46071,6 @@ export namespace Prisma {
     createdAt?: SortOrder
   }
 
-  export type DecimalNullableFilter<$PrismaModel = never> = {
-    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
-    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
-    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
-    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    not?: NestedDecimalNullableFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
-  }
-
   export type ScoringConfigVersionScalarRelationFilter = {
     is?: ScoringConfigVersionWhereInput
     isNot?: ScoringConfigVersionWhereInput
@@ -45842,22 +46130,6 @@ export namespace Prisma {
 
   export type ScaleDefinitionSumOrderByAggregateInput = {
     kCorrectionWeight?: SortOrder
-  }
-
-  export type DecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
-    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
-    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
-    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    not?: NestedDecimalNullableWithAggregatesFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _avg?: NestedDecimalNullableFilter<$PrismaModel>
-    _sum?: NestedDecimalNullableFilter<$PrismaModel>
-    _min?: NestedDecimalNullableFilter<$PrismaModel>
-    _max?: NestedDecimalNullableFilter<$PrismaModel>
   }
 
   export type DecimalFilter<$PrismaModel = never> = {
@@ -46043,10 +46315,13 @@ export namespace Prisma {
     patientUserId?: SortOrder
     assessmentTypeId?: SortOrder
     requestStatus?: SortOrder
+    billingModeSnapshot?: SortOrder
     paymentRequirement?: SortOrder
     paymentSatisfied?: SortOrder
     activePaymentId?: SortOrder
+    doctorUserId?: SortOrder
     purpose?: SortOrder
+    adminNote?: SortOrder
     requestedAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -46057,10 +46332,13 @@ export namespace Prisma {
     patientUserId?: SortOrder
     assessmentTypeId?: SortOrder
     requestStatus?: SortOrder
+    billingModeSnapshot?: SortOrder
     paymentRequirement?: SortOrder
     paymentSatisfied?: SortOrder
     activePaymentId?: SortOrder
+    doctorUserId?: SortOrder
     purpose?: SortOrder
+    adminNote?: SortOrder
     requestedAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -46071,10 +46349,13 @@ export namespace Prisma {
     patientUserId?: SortOrder
     assessmentTypeId?: SortOrder
     requestStatus?: SortOrder
+    billingModeSnapshot?: SortOrder
     paymentRequirement?: SortOrder
     paymentSatisfied?: SortOrder
     activePaymentId?: SortOrder
+    doctorUserId?: SortOrder
     purpose?: SortOrder
+    adminNote?: SortOrder
     requestedAt?: SortOrder
     createdAt?: SortOrder
     updatedAt?: SortOrder
@@ -46797,6 +47078,14 @@ export namespace Prisma {
     set?: string
   }
 
+  export type NullableDecimalFieldUpdateOperationsInput = {
+    set?: Decimal | DecimalJsLike | number | string | null
+    increment?: Decimal | DecimalJsLike | number | string
+    decrement?: Decimal | DecimalJsLike | number | string
+    multiply?: Decimal | DecimalJsLike | number | string
+    divide?: Decimal | DecimalJsLike | number | string
+  }
+
   export type DateTimeFieldUpdateOperationsInput = {
     set?: Date | string
   }
@@ -46838,6 +47127,13 @@ export namespace Prisma {
     create?: XOR<AssessmentRequestCreateWithoutPatientInput, AssessmentRequestUncheckedCreateWithoutPatientInput> | AssessmentRequestCreateWithoutPatientInput[] | AssessmentRequestUncheckedCreateWithoutPatientInput[]
     connectOrCreate?: AssessmentRequestCreateOrConnectWithoutPatientInput | AssessmentRequestCreateOrConnectWithoutPatientInput[]
     createMany?: AssessmentRequestCreateManyPatientInputEnvelope
+    connect?: AssessmentRequestWhereUniqueInput | AssessmentRequestWhereUniqueInput[]
+  }
+
+  export type AssessmentRequestCreateNestedManyWithoutAssignedDoctorInput = {
+    create?: XOR<AssessmentRequestCreateWithoutAssignedDoctorInput, AssessmentRequestUncheckedCreateWithoutAssignedDoctorInput> | AssessmentRequestCreateWithoutAssignedDoctorInput[] | AssessmentRequestUncheckedCreateWithoutAssignedDoctorInput[]
+    connectOrCreate?: AssessmentRequestCreateOrConnectWithoutAssignedDoctorInput | AssessmentRequestCreateOrConnectWithoutAssignedDoctorInput[]
+    createMany?: AssessmentRequestCreateManyAssignedDoctorInputEnvelope
     connect?: AssessmentRequestWhereUniqueInput | AssessmentRequestWhereUniqueInput[]
   }
 
@@ -46906,6 +47202,13 @@ export namespace Prisma {
     create?: XOR<AssessmentRequestCreateWithoutPatientInput, AssessmentRequestUncheckedCreateWithoutPatientInput> | AssessmentRequestCreateWithoutPatientInput[] | AssessmentRequestUncheckedCreateWithoutPatientInput[]
     connectOrCreate?: AssessmentRequestCreateOrConnectWithoutPatientInput | AssessmentRequestCreateOrConnectWithoutPatientInput[]
     createMany?: AssessmentRequestCreateManyPatientInputEnvelope
+    connect?: AssessmentRequestWhereUniqueInput | AssessmentRequestWhereUniqueInput[]
+  }
+
+  export type AssessmentRequestUncheckedCreateNestedManyWithoutAssignedDoctorInput = {
+    create?: XOR<AssessmentRequestCreateWithoutAssignedDoctorInput, AssessmentRequestUncheckedCreateWithoutAssignedDoctorInput> | AssessmentRequestCreateWithoutAssignedDoctorInput[] | AssessmentRequestUncheckedCreateWithoutAssignedDoctorInput[]
+    connectOrCreate?: AssessmentRequestCreateOrConnectWithoutAssignedDoctorInput | AssessmentRequestCreateOrConnectWithoutAssignedDoctorInput[]
+    createMany?: AssessmentRequestCreateManyAssignedDoctorInputEnvelope
     connect?: AssessmentRequestWhereUniqueInput | AssessmentRequestWhereUniqueInput[]
   }
 
@@ -46996,6 +47299,20 @@ export namespace Prisma {
     connect?: AssessmentRequestWhereUniqueInput | AssessmentRequestWhereUniqueInput[]
     update?: AssessmentRequestUpdateWithWhereUniqueWithoutPatientInput | AssessmentRequestUpdateWithWhereUniqueWithoutPatientInput[]
     updateMany?: AssessmentRequestUpdateManyWithWhereWithoutPatientInput | AssessmentRequestUpdateManyWithWhereWithoutPatientInput[]
+    deleteMany?: AssessmentRequestScalarWhereInput | AssessmentRequestScalarWhereInput[]
+  }
+
+  export type AssessmentRequestUpdateManyWithoutAssignedDoctorNestedInput = {
+    create?: XOR<AssessmentRequestCreateWithoutAssignedDoctorInput, AssessmentRequestUncheckedCreateWithoutAssignedDoctorInput> | AssessmentRequestCreateWithoutAssignedDoctorInput[] | AssessmentRequestUncheckedCreateWithoutAssignedDoctorInput[]
+    connectOrCreate?: AssessmentRequestCreateOrConnectWithoutAssignedDoctorInput | AssessmentRequestCreateOrConnectWithoutAssignedDoctorInput[]
+    upsert?: AssessmentRequestUpsertWithWhereUniqueWithoutAssignedDoctorInput | AssessmentRequestUpsertWithWhereUniqueWithoutAssignedDoctorInput[]
+    createMany?: AssessmentRequestCreateManyAssignedDoctorInputEnvelope
+    set?: AssessmentRequestWhereUniqueInput | AssessmentRequestWhereUniqueInput[]
+    disconnect?: AssessmentRequestWhereUniqueInput | AssessmentRequestWhereUniqueInput[]
+    delete?: AssessmentRequestWhereUniqueInput | AssessmentRequestWhereUniqueInput[]
+    connect?: AssessmentRequestWhereUniqueInput | AssessmentRequestWhereUniqueInput[]
+    update?: AssessmentRequestUpdateWithWhereUniqueWithoutAssignedDoctorInput | AssessmentRequestUpdateWithWhereUniqueWithoutAssignedDoctorInput[]
+    updateMany?: AssessmentRequestUpdateManyWithWhereWithoutAssignedDoctorInput | AssessmentRequestUpdateManyWithWhereWithoutAssignedDoctorInput[]
     deleteMany?: AssessmentRequestScalarWhereInput | AssessmentRequestScalarWhereInput[]
   }
 
@@ -47128,6 +47445,20 @@ export namespace Prisma {
     connect?: AssessmentRequestWhereUniqueInput | AssessmentRequestWhereUniqueInput[]
     update?: AssessmentRequestUpdateWithWhereUniqueWithoutPatientInput | AssessmentRequestUpdateWithWhereUniqueWithoutPatientInput[]
     updateMany?: AssessmentRequestUpdateManyWithWhereWithoutPatientInput | AssessmentRequestUpdateManyWithWhereWithoutPatientInput[]
+    deleteMany?: AssessmentRequestScalarWhereInput | AssessmentRequestScalarWhereInput[]
+  }
+
+  export type AssessmentRequestUncheckedUpdateManyWithoutAssignedDoctorNestedInput = {
+    create?: XOR<AssessmentRequestCreateWithoutAssignedDoctorInput, AssessmentRequestUncheckedCreateWithoutAssignedDoctorInput> | AssessmentRequestCreateWithoutAssignedDoctorInput[] | AssessmentRequestUncheckedCreateWithoutAssignedDoctorInput[]
+    connectOrCreate?: AssessmentRequestCreateOrConnectWithoutAssignedDoctorInput | AssessmentRequestCreateOrConnectWithoutAssignedDoctorInput[]
+    upsert?: AssessmentRequestUpsertWithWhereUniqueWithoutAssignedDoctorInput | AssessmentRequestUpsertWithWhereUniqueWithoutAssignedDoctorInput[]
+    createMany?: AssessmentRequestCreateManyAssignedDoctorInputEnvelope
+    set?: AssessmentRequestWhereUniqueInput | AssessmentRequestWhereUniqueInput[]
+    disconnect?: AssessmentRequestWhereUniqueInput | AssessmentRequestWhereUniqueInput[]
+    delete?: AssessmentRequestWhereUniqueInput | AssessmentRequestWhereUniqueInput[]
+    connect?: AssessmentRequestWhereUniqueInput | AssessmentRequestWhereUniqueInput[]
+    update?: AssessmentRequestUpdateWithWhereUniqueWithoutAssignedDoctorInput | AssessmentRequestUpdateWithWhereUniqueWithoutAssignedDoctorInput[]
+    updateMany?: AssessmentRequestUpdateManyWithWhereWithoutAssignedDoctorInput | AssessmentRequestUpdateManyWithWhereWithoutAssignedDoctorInput[]
     deleteMany?: AssessmentRequestScalarWhereInput | AssessmentRequestScalarWhereInput[]
   }
 
@@ -47947,14 +48278,6 @@ export namespace Prisma {
     connect?: ScaleResultWhereUniqueInput | ScaleResultWhereUniqueInput[]
   }
 
-  export type NullableDecimalFieldUpdateOperationsInput = {
-    set?: Decimal | DecimalJsLike | number | string | null
-    increment?: Decimal | DecimalJsLike | number | string
-    decrement?: Decimal | DecimalJsLike | number | string
-    multiply?: Decimal | DecimalJsLike | number | string
-    divide?: Decimal | DecimalJsLike | number | string
-  }
-
   export type ScoringConfigVersionUpdateOneRequiredWithoutScaleDefinitionsNestedInput = {
     create?: XOR<ScoringConfigVersionCreateWithoutScaleDefinitionsInput, ScoringConfigVersionUncheckedCreateWithoutScaleDefinitionsInput>
     connectOrCreate?: ScoringConfigVersionCreateOrConnectWithoutScaleDefinitionsInput
@@ -48131,6 +48454,12 @@ export namespace Prisma {
     connect?: UserWhereUniqueInput
   }
 
+  export type UserCreateNestedOneWithoutAssignedRequestsInput = {
+    create?: XOR<UserCreateWithoutAssignedRequestsInput, UserUncheckedCreateWithoutAssignedRequestsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutAssignedRequestsInput
+    connect?: UserWhereUniqueInput
+  }
+
   export type AssessmentTypeCreateNestedOneWithoutAssessmentRequestsInput = {
     create?: XOR<AssessmentTypeCreateWithoutAssessmentRequestsInput, AssessmentTypeUncheckedCreateWithoutAssessmentRequestsInput>
     connectOrCreate?: AssessmentTypeCreateOrConnectWithoutAssessmentRequestsInput
@@ -48175,6 +48504,16 @@ export namespace Prisma {
     upsert?: UserUpsertWithoutAssessmentRequestsInput
     connect?: UserWhereUniqueInput
     update?: XOR<XOR<UserUpdateToOneWithWhereWithoutAssessmentRequestsInput, UserUpdateWithoutAssessmentRequestsInput>, UserUncheckedUpdateWithoutAssessmentRequestsInput>
+  }
+
+  export type UserUpdateOneWithoutAssignedRequestsNestedInput = {
+    create?: XOR<UserCreateWithoutAssignedRequestsInput, UserUncheckedCreateWithoutAssignedRequestsInput>
+    connectOrCreate?: UserCreateOrConnectWithoutAssignedRequestsInput
+    upsert?: UserUpsertWithoutAssignedRequestsInput
+    disconnect?: UserWhereInput | boolean
+    delete?: UserWhereInput | boolean
+    connect?: UserWhereUniqueInput
+    update?: XOR<XOR<UserUpdateToOneWithWhereWithoutAssignedRequestsInput, UserUpdateWithoutAssignedRequestsInput>, UserUncheckedUpdateWithoutAssignedRequestsInput>
   }
 
   export type AssessmentTypeUpdateOneRequiredWithoutAssessmentRequestsNestedInput = {
@@ -48355,10 +48694,12 @@ export namespace Prisma {
     update?: XOR<XOR<UserUpdateToOneWithWhereWithoutPatientSessionsInput, UserUpdateWithoutPatientSessionsInput>, UserUncheckedUpdateWithoutPatientSessionsInput>
   }
 
-  export type UserUpdateOneRequiredWithoutAssignedSessionsNestedInput = {
+  export type UserUpdateOneWithoutAssignedSessionsNestedInput = {
     create?: XOR<UserCreateWithoutAssignedSessionsInput, UserUncheckedCreateWithoutAssignedSessionsInput>
     connectOrCreate?: UserCreateOrConnectWithoutAssignedSessionsInput
     upsert?: UserUpsertWithoutAssignedSessionsInput
+    disconnect?: UserWhereInput | boolean
+    delete?: UserWhereInput | boolean
     connect?: UserWhereUniqueInput
     update?: XOR<XOR<UserUpdateToOneWithWhereWithoutAssignedSessionsInput, UserUpdateWithoutAssignedSessionsInput>, UserUncheckedUpdateWithoutAssignedSessionsInput>
   }
@@ -49325,6 +49666,17 @@ export namespace Prisma {
     not?: NestedStringFilter<$PrismaModel> | string
   }
 
+  export type NestedDecimalNullableFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalNullableFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
+  }
+
   export type NestedStringNullableFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel> | null
     in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
@@ -49378,6 +49730,33 @@ export namespace Prisma {
     not?: NestedIntFilter<$PrismaModel> | number
   }
 
+  export type NestedDecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
+    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
+    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
+    not?: NestedDecimalNullableWithAggregatesFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
+    _count?: NestedIntNullableFilter<$PrismaModel>
+    _avg?: NestedDecimalNullableFilter<$PrismaModel>
+    _sum?: NestedDecimalNullableFilter<$PrismaModel>
+    _min?: NestedDecimalNullableFilter<$PrismaModel>
+    _max?: NestedDecimalNullableFilter<$PrismaModel>
+  }
+
+  export type NestedIntNullableFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel> | null
+    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntNullableFilter<$PrismaModel> | number | null
+  }
+
   export type NestedStringNullableWithAggregatesFilter<$PrismaModel = never> = {
     equals?: string | StringFieldRefInput<$PrismaModel> | null
     in?: string[] | ListStringFieldRefInput<$PrismaModel> | null
@@ -49393,17 +49772,6 @@ export namespace Prisma {
     _count?: NestedIntNullableFilter<$PrismaModel>
     _min?: NestedStringNullableFilter<$PrismaModel>
     _max?: NestedStringNullableFilter<$PrismaModel>
-  }
-
-  export type NestedIntNullableFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel> | null
-    in?: number[] | ListIntFieldRefInput<$PrismaModel> | null
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel> | null
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntNullableFilter<$PrismaModel> | number | null
   }
 
   export type NestedDateTimeWithAggregatesFilter<$PrismaModel = never> = {
@@ -49483,33 +49851,6 @@ export namespace Prisma {
     not?: NestedFloatFilter<$PrismaModel> | number
   }
 
-  export type NestedDecimalNullableFilter<$PrismaModel = never> = {
-    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
-    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
-    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
-    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    not?: NestedDecimalNullableFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
-  }
-
-  export type NestedDecimalNullableWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel> | null
-    in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
-    notIn?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel> | null
-    lt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    lte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    gt?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    gte?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
-    not?: NestedDecimalNullableWithAggregatesFilter<$PrismaModel> | Decimal | DecimalJsLike | number | string | null
-    _count?: NestedIntNullableFilter<$PrismaModel>
-    _avg?: NestedDecimalNullableFilter<$PrismaModel>
-    _sum?: NestedDecimalNullableFilter<$PrismaModel>
-    _min?: NestedDecimalNullableFilter<$PrismaModel>
-    _max?: NestedDecimalNullableFilter<$PrismaModel>
-  }
-
   export type NestedDecimalFilter<$PrismaModel = never> = {
     equals?: Decimal | DecimalJsLike | number | string | DecimalFieldRefInput<$PrismaModel>
     in?: Decimal[] | DecimalJsLike[] | number[] | string[] | ListDecimalFieldRefInput<$PrismaModel>
@@ -49574,6 +49915,7 @@ export namespace Prisma {
     patientProfile?: PatientProfileCreateNestedOneWithoutUserInput
     doctorProfile?: DoctorProfileCreateNestedOneWithoutUserInput
     assessmentRequests?: AssessmentRequestCreateNestedManyWithoutPatientInput
+    assignedRequests?: AssessmentRequestCreateNestedManyWithoutAssignedDoctorInput
     assignedSessions?: ExamSessionCreateNestedManyWithoutDoctorInput
     patientSessions?: ExamSessionCreateNestedManyWithoutPatientInput
     authoredClinicalReports?: ClinicalReportCreateNestedManyWithoutAuthoredByInput
@@ -49593,6 +49935,7 @@ export namespace Prisma {
     patientProfile?: PatientProfileUncheckedCreateNestedOneWithoutUserInput
     doctorProfile?: DoctorProfileUncheckedCreateNestedOneWithoutUserInput
     assessmentRequests?: AssessmentRequestUncheckedCreateNestedManyWithoutPatientInput
+    assignedRequests?: AssessmentRequestUncheckedCreateNestedManyWithoutAssignedDoctorInput
     assignedSessions?: ExamSessionUncheckedCreateNestedManyWithoutDoctorInput
     patientSessions?: ExamSessionUncheckedCreateNestedManyWithoutPatientInput
     authoredClinicalReports?: ClinicalReportUncheckedCreateNestedManyWithoutAuthoredByInput
@@ -49628,6 +49971,7 @@ export namespace Prisma {
     patientProfile?: PatientProfileUpdateOneWithoutUserNestedInput
     doctorProfile?: DoctorProfileUpdateOneWithoutUserNestedInput
     assessmentRequests?: AssessmentRequestUpdateManyWithoutPatientNestedInput
+    assignedRequests?: AssessmentRequestUpdateManyWithoutAssignedDoctorNestedInput
     assignedSessions?: ExamSessionUpdateManyWithoutDoctorNestedInput
     patientSessions?: ExamSessionUpdateManyWithoutPatientNestedInput
     authoredClinicalReports?: ClinicalReportUpdateManyWithoutAuthoredByNestedInput
@@ -49647,6 +49991,7 @@ export namespace Prisma {
     patientProfile?: PatientProfileUncheckedUpdateOneWithoutUserNestedInput
     doctorProfile?: DoctorProfileUncheckedUpdateOneWithoutUserNestedInput
     assessmentRequests?: AssessmentRequestUncheckedUpdateManyWithoutPatientNestedInput
+    assignedRequests?: AssessmentRequestUncheckedUpdateManyWithoutAssignedDoctorNestedInput
     assignedSessions?: ExamSessionUncheckedUpdateManyWithoutDoctorNestedInput
     patientSessions?: ExamSessionUncheckedUpdateManyWithoutPatientNestedInput
     authoredClinicalReports?: ClinicalReportUncheckedUpdateManyWithoutAuthoredByNestedInput
@@ -49735,12 +50080,15 @@ export namespace Prisma {
   export type AssessmentRequestCreateWithoutPatientInput = {
     id?: string
     requestStatus?: string
+    billingModeSnapshot?: string | null
     paymentRequirement?: string
     paymentSatisfied?: boolean
     purpose?: string | null
+    adminNote?: string | null
     requestedAt?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
+    assignedDoctor?: UserCreateNestedOneWithoutAssignedRequestsInput
     assessmentType: AssessmentTypeCreateNestedOneWithoutAssessmentRequestsInput
     activePayment?: PaymentCreateNestedOneWithoutActiveForRequestInput
     payments?: PaymentCreateNestedManyWithoutAssessmentRequestInput
@@ -49751,10 +50099,13 @@ export namespace Prisma {
     id?: string
     assessmentTypeId: string
     requestStatus?: string
+    billingModeSnapshot?: string | null
     paymentRequirement?: string
     paymentSatisfied?: boolean
     activePaymentId?: string | null
+    doctorUserId?: string | null
     purpose?: string | null
+    adminNote?: string | null
     requestedAt?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -49769,6 +50120,52 @@ export namespace Prisma {
 
   export type AssessmentRequestCreateManyPatientInputEnvelope = {
     data: AssessmentRequestCreateManyPatientInput | AssessmentRequestCreateManyPatientInput[]
+    skipDuplicates?: boolean
+  }
+
+  export type AssessmentRequestCreateWithoutAssignedDoctorInput = {
+    id?: string
+    requestStatus?: string
+    billingModeSnapshot?: string | null
+    paymentRequirement?: string
+    paymentSatisfied?: boolean
+    purpose?: string | null
+    adminNote?: string | null
+    requestedAt?: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    patient: UserCreateNestedOneWithoutAssessmentRequestsInput
+    assessmentType: AssessmentTypeCreateNestedOneWithoutAssessmentRequestsInput
+    activePayment?: PaymentCreateNestedOneWithoutActiveForRequestInput
+    payments?: PaymentCreateNestedManyWithoutAssessmentRequestInput
+    examSession?: ExamSessionCreateNestedOneWithoutAssessmentRequestInput
+  }
+
+  export type AssessmentRequestUncheckedCreateWithoutAssignedDoctorInput = {
+    id?: string
+    patientUserId: string
+    assessmentTypeId: string
+    requestStatus?: string
+    billingModeSnapshot?: string | null
+    paymentRequirement?: string
+    paymentSatisfied?: boolean
+    activePaymentId?: string | null
+    purpose?: string | null
+    adminNote?: string | null
+    requestedAt?: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    payments?: PaymentUncheckedCreateNestedManyWithoutAssessmentRequestInput
+    examSession?: ExamSessionUncheckedCreateNestedOneWithoutAssessmentRequestInput
+  }
+
+  export type AssessmentRequestCreateOrConnectWithoutAssignedDoctorInput = {
+    where: AssessmentRequestWhereUniqueInput
+    create: XOR<AssessmentRequestCreateWithoutAssignedDoctorInput, AssessmentRequestUncheckedCreateWithoutAssignedDoctorInput>
+  }
+
+  export type AssessmentRequestCreateManyAssignedDoctorInputEnvelope = {
+    data: AssessmentRequestCreateManyAssignedDoctorInput | AssessmentRequestCreateManyAssignedDoctorInput[]
     skipDuplicates?: boolean
   }
 
@@ -49835,7 +50232,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     assessmentRequest: AssessmentRequestCreateNestedOneWithoutExamSessionInput
-    doctor: UserCreateNestedOneWithoutAssignedSessionsInput
+    doctor?: UserCreateNestedOneWithoutAssignedSessionsInput
     instrumentVersion: InstrumentVersionCreateNestedOneWithoutExamSessionsInput
     questionBankVersion: QuestionBankVersionCreateNestedOneWithoutExamSessionsInput
     scoringConfigVersion: ScoringConfigVersionCreateNestedOneWithoutExamSessionsInput
@@ -49848,7 +50245,7 @@ export namespace Prisma {
   export type ExamSessionUncheckedCreateWithoutPatientInput = {
     id?: string
     assessmentRequestId: string
-    doctorUserId: string
+    doctorUserId?: string | null
     instrumentVersionId: string
     questionBankVersionId: string
     scoringConfigVersionId: string
@@ -49983,12 +50380,16 @@ export namespace Prisma {
   export type AppSettingsCreateWithoutUpdatedByInput = {
     id?: string
     billingMode?: string
+    defaultCurrency?: string
+    defaultAmount?: Decimal | DecimalJsLike | number | string | null
     updatedAt?: Date | string
   }
 
   export type AppSettingsUncheckedCreateWithoutUpdatedByInput = {
     id?: string
     billingMode?: string
+    defaultCurrency?: string
+    defaultAmount?: Decimal | DecimalJsLike | number | string | null
     updatedAt?: Date | string
   }
 
@@ -50119,13 +50520,32 @@ export namespace Prisma {
     patientUserId?: StringFilter<"AssessmentRequest"> | string
     assessmentTypeId?: StringFilter<"AssessmentRequest"> | string
     requestStatus?: StringFilter<"AssessmentRequest"> | string
+    billingModeSnapshot?: StringNullableFilter<"AssessmentRequest"> | string | null
     paymentRequirement?: StringFilter<"AssessmentRequest"> | string
     paymentSatisfied?: BoolFilter<"AssessmentRequest"> | boolean
     activePaymentId?: StringNullableFilter<"AssessmentRequest"> | string | null
+    doctorUserId?: StringNullableFilter<"AssessmentRequest"> | string | null
     purpose?: StringNullableFilter<"AssessmentRequest"> | string | null
+    adminNote?: StringNullableFilter<"AssessmentRequest"> | string | null
     requestedAt?: DateTimeFilter<"AssessmentRequest"> | Date | string
     createdAt?: DateTimeFilter<"AssessmentRequest"> | Date | string
     updatedAt?: DateTimeFilter<"AssessmentRequest"> | Date | string
+  }
+
+  export type AssessmentRequestUpsertWithWhereUniqueWithoutAssignedDoctorInput = {
+    where: AssessmentRequestWhereUniqueInput
+    update: XOR<AssessmentRequestUpdateWithoutAssignedDoctorInput, AssessmentRequestUncheckedUpdateWithoutAssignedDoctorInput>
+    create: XOR<AssessmentRequestCreateWithoutAssignedDoctorInput, AssessmentRequestUncheckedCreateWithoutAssignedDoctorInput>
+  }
+
+  export type AssessmentRequestUpdateWithWhereUniqueWithoutAssignedDoctorInput = {
+    where: AssessmentRequestWhereUniqueInput
+    data: XOR<AssessmentRequestUpdateWithoutAssignedDoctorInput, AssessmentRequestUncheckedUpdateWithoutAssignedDoctorInput>
+  }
+
+  export type AssessmentRequestUpdateManyWithWhereWithoutAssignedDoctorInput = {
+    where: AssessmentRequestScalarWhereInput
+    data: XOR<AssessmentRequestUpdateManyMutationInput, AssessmentRequestUncheckedUpdateManyWithoutAssignedDoctorInput>
   }
 
   export type ExamSessionUpsertWithWhereUniqueWithoutDoctorInput = {
@@ -50151,7 +50571,7 @@ export namespace Prisma {
     id?: StringFilter<"ExamSession"> | string
     assessmentRequestId?: StringFilter<"ExamSession"> | string
     patientUserId?: StringFilter<"ExamSession"> | string
-    doctorUserId?: StringFilter<"ExamSession"> | string
+    doctorUserId?: StringNullableFilter<"ExamSession"> | string | null
     instrumentVersionId?: StringFilter<"ExamSession"> | string
     questionBankVersionId?: StringFilter<"ExamSession"> | string
     scoringConfigVersionId?: StringFilter<"ExamSession"> | string
@@ -50296,6 +50716,8 @@ export namespace Prisma {
     NOT?: AppSettingsScalarWhereInput | AppSettingsScalarWhereInput[]
     id?: StringFilter<"AppSettings"> | string
     billingMode?: StringFilter<"AppSettings"> | string
+    defaultCurrency?: StringFilter<"AppSettings"> | string
+    defaultAmount?: DecimalNullableFilter<"AppSettings"> | Decimal | DecimalJsLike | number | string | null
     updatedByUserId?: StringNullableFilter<"AppSettings"> | string | null
     updatedAt?: DateTimeFilter<"AppSettings"> | Date | string
   }
@@ -50351,6 +50773,7 @@ export namespace Prisma {
     patientProfile?: PatientProfileCreateNestedOneWithoutUserInput
     doctorProfile?: DoctorProfileCreateNestedOneWithoutUserInput
     assessmentRequests?: AssessmentRequestCreateNestedManyWithoutPatientInput
+    assignedRequests?: AssessmentRequestCreateNestedManyWithoutAssignedDoctorInput
     assignedSessions?: ExamSessionCreateNestedManyWithoutDoctorInput
     patientSessions?: ExamSessionCreateNestedManyWithoutPatientInput
     authoredClinicalReports?: ClinicalReportCreateNestedManyWithoutAuthoredByInput
@@ -50370,6 +50793,7 @@ export namespace Prisma {
     patientProfile?: PatientProfileUncheckedCreateNestedOneWithoutUserInput
     doctorProfile?: DoctorProfileUncheckedCreateNestedOneWithoutUserInput
     assessmentRequests?: AssessmentRequestUncheckedCreateNestedManyWithoutPatientInput
+    assignedRequests?: AssessmentRequestUncheckedCreateNestedManyWithoutAssignedDoctorInput
     assignedSessions?: ExamSessionUncheckedCreateNestedManyWithoutDoctorInput
     patientSessions?: ExamSessionUncheckedCreateNestedManyWithoutPatientInput
     authoredClinicalReports?: ClinicalReportUncheckedCreateNestedManyWithoutAuthoredByInput
@@ -50424,6 +50848,7 @@ export namespace Prisma {
     patientProfile?: PatientProfileUpdateOneWithoutUserNestedInput
     doctorProfile?: DoctorProfileUpdateOneWithoutUserNestedInput
     assessmentRequests?: AssessmentRequestUpdateManyWithoutPatientNestedInput
+    assignedRequests?: AssessmentRequestUpdateManyWithoutAssignedDoctorNestedInput
     assignedSessions?: ExamSessionUpdateManyWithoutDoctorNestedInput
     patientSessions?: ExamSessionUpdateManyWithoutPatientNestedInput
     authoredClinicalReports?: ClinicalReportUpdateManyWithoutAuthoredByNestedInput
@@ -50443,6 +50868,7 @@ export namespace Prisma {
     patientProfile?: PatientProfileUncheckedUpdateOneWithoutUserNestedInput
     doctorProfile?: DoctorProfileUncheckedUpdateOneWithoutUserNestedInput
     assessmentRequests?: AssessmentRequestUncheckedUpdateManyWithoutPatientNestedInput
+    assignedRequests?: AssessmentRequestUncheckedUpdateManyWithoutAssignedDoctorNestedInput
     assignedSessions?: ExamSessionUncheckedUpdateManyWithoutDoctorNestedInput
     patientSessions?: ExamSessionUncheckedUpdateManyWithoutPatientNestedInput
     authoredClinicalReports?: ClinicalReportUncheckedUpdateManyWithoutAuthoredByNestedInput
@@ -50487,6 +50913,7 @@ export namespace Prisma {
     roleAssignments?: UserRoleAssignmentCreateNestedManyWithoutUserInput
     doctorProfile?: DoctorProfileCreateNestedOneWithoutUserInput
     assessmentRequests?: AssessmentRequestCreateNestedManyWithoutPatientInput
+    assignedRequests?: AssessmentRequestCreateNestedManyWithoutAssignedDoctorInput
     assignedSessions?: ExamSessionCreateNestedManyWithoutDoctorInput
     patientSessions?: ExamSessionCreateNestedManyWithoutPatientInput
     authoredClinicalReports?: ClinicalReportCreateNestedManyWithoutAuthoredByInput
@@ -50506,6 +50933,7 @@ export namespace Prisma {
     roleAssignments?: UserRoleAssignmentUncheckedCreateNestedManyWithoutUserInput
     doctorProfile?: DoctorProfileUncheckedCreateNestedOneWithoutUserInput
     assessmentRequests?: AssessmentRequestUncheckedCreateNestedManyWithoutPatientInput
+    assignedRequests?: AssessmentRequestUncheckedCreateNestedManyWithoutAssignedDoctorInput
     assignedSessions?: ExamSessionUncheckedCreateNestedManyWithoutDoctorInput
     patientSessions?: ExamSessionUncheckedCreateNestedManyWithoutPatientInput
     authoredClinicalReports?: ClinicalReportUncheckedCreateNestedManyWithoutAuthoredByInput
@@ -50541,6 +50969,7 @@ export namespace Prisma {
     roleAssignments?: UserRoleAssignmentUpdateManyWithoutUserNestedInput
     doctorProfile?: DoctorProfileUpdateOneWithoutUserNestedInput
     assessmentRequests?: AssessmentRequestUpdateManyWithoutPatientNestedInput
+    assignedRequests?: AssessmentRequestUpdateManyWithoutAssignedDoctorNestedInput
     assignedSessions?: ExamSessionUpdateManyWithoutDoctorNestedInput
     patientSessions?: ExamSessionUpdateManyWithoutPatientNestedInput
     authoredClinicalReports?: ClinicalReportUpdateManyWithoutAuthoredByNestedInput
@@ -50560,6 +50989,7 @@ export namespace Prisma {
     roleAssignments?: UserRoleAssignmentUncheckedUpdateManyWithoutUserNestedInput
     doctorProfile?: DoctorProfileUncheckedUpdateOneWithoutUserNestedInput
     assessmentRequests?: AssessmentRequestUncheckedUpdateManyWithoutPatientNestedInput
+    assignedRequests?: AssessmentRequestUncheckedUpdateManyWithoutAssignedDoctorNestedInput
     assignedSessions?: ExamSessionUncheckedUpdateManyWithoutDoctorNestedInput
     patientSessions?: ExamSessionUncheckedUpdateManyWithoutPatientNestedInput
     authoredClinicalReports?: ClinicalReportUncheckedUpdateManyWithoutAuthoredByNestedInput
@@ -50579,6 +51009,7 @@ export namespace Prisma {
     roleAssignments?: UserRoleAssignmentCreateNestedManyWithoutUserInput
     patientProfile?: PatientProfileCreateNestedOneWithoutUserInput
     assessmentRequests?: AssessmentRequestCreateNestedManyWithoutPatientInput
+    assignedRequests?: AssessmentRequestCreateNestedManyWithoutAssignedDoctorInput
     assignedSessions?: ExamSessionCreateNestedManyWithoutDoctorInput
     patientSessions?: ExamSessionCreateNestedManyWithoutPatientInput
     authoredClinicalReports?: ClinicalReportCreateNestedManyWithoutAuthoredByInput
@@ -50598,6 +51029,7 @@ export namespace Prisma {
     roleAssignments?: UserRoleAssignmentUncheckedCreateNestedManyWithoutUserInput
     patientProfile?: PatientProfileUncheckedCreateNestedOneWithoutUserInput
     assessmentRequests?: AssessmentRequestUncheckedCreateNestedManyWithoutPatientInput
+    assignedRequests?: AssessmentRequestUncheckedCreateNestedManyWithoutAssignedDoctorInput
     assignedSessions?: ExamSessionUncheckedCreateNestedManyWithoutDoctorInput
     patientSessions?: ExamSessionUncheckedCreateNestedManyWithoutPatientInput
     authoredClinicalReports?: ClinicalReportUncheckedCreateNestedManyWithoutAuthoredByInput
@@ -50633,6 +51065,7 @@ export namespace Prisma {
     roleAssignments?: UserRoleAssignmentUpdateManyWithoutUserNestedInput
     patientProfile?: PatientProfileUpdateOneWithoutUserNestedInput
     assessmentRequests?: AssessmentRequestUpdateManyWithoutPatientNestedInput
+    assignedRequests?: AssessmentRequestUpdateManyWithoutAssignedDoctorNestedInput
     assignedSessions?: ExamSessionUpdateManyWithoutDoctorNestedInput
     patientSessions?: ExamSessionUpdateManyWithoutPatientNestedInput
     authoredClinicalReports?: ClinicalReportUpdateManyWithoutAuthoredByNestedInput
@@ -50652,6 +51085,7 @@ export namespace Prisma {
     roleAssignments?: UserRoleAssignmentUncheckedUpdateManyWithoutUserNestedInput
     patientProfile?: PatientProfileUncheckedUpdateOneWithoutUserNestedInput
     assessmentRequests?: AssessmentRequestUncheckedUpdateManyWithoutPatientNestedInput
+    assignedRequests?: AssessmentRequestUncheckedUpdateManyWithoutAssignedDoctorNestedInput
     assignedSessions?: ExamSessionUncheckedUpdateManyWithoutDoctorNestedInput
     patientSessions?: ExamSessionUncheckedUpdateManyWithoutPatientNestedInput
     authoredClinicalReports?: ClinicalReportUncheckedUpdateManyWithoutAuthoredByNestedInput
@@ -50695,13 +51129,16 @@ export namespace Prisma {
   export type AssessmentRequestCreateWithoutAssessmentTypeInput = {
     id?: string
     requestStatus?: string
+    billingModeSnapshot?: string | null
     paymentRequirement?: string
     paymentSatisfied?: boolean
     purpose?: string | null
+    adminNote?: string | null
     requestedAt?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
     patient: UserCreateNestedOneWithoutAssessmentRequestsInput
+    assignedDoctor?: UserCreateNestedOneWithoutAssignedRequestsInput
     activePayment?: PaymentCreateNestedOneWithoutActiveForRequestInput
     payments?: PaymentCreateNestedManyWithoutAssessmentRequestInput
     examSession?: ExamSessionCreateNestedOneWithoutAssessmentRequestInput
@@ -50711,10 +51148,13 @@ export namespace Prisma {
     id?: string
     patientUserId: string
     requestStatus?: string
+    billingModeSnapshot?: string | null
     paymentRequirement?: string
     paymentSatisfied?: boolean
     activePaymentId?: string | null
+    doctorUserId?: string | null
     purpose?: string | null
+    adminNote?: string | null
     requestedAt?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -50881,7 +51321,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     assessmentRequest: AssessmentRequestCreateNestedOneWithoutExamSessionInput
     patient: UserCreateNestedOneWithoutPatientSessionsInput
-    doctor: UserCreateNestedOneWithoutAssignedSessionsInput
+    doctor?: UserCreateNestedOneWithoutAssignedSessionsInput
     questionBankVersion: QuestionBankVersionCreateNestedOneWithoutExamSessionsInput
     scoringConfigVersion: ScoringConfigVersionCreateNestedOneWithoutExamSessionsInput
     answers?: SessionAnswerCreateNestedManyWithoutExamSessionInput
@@ -50894,7 +51334,7 @@ export namespace Prisma {
     id?: string
     assessmentRequestId: string
     patientUserId: string
-    doctorUserId: string
+    doctorUserId?: string | null
     questionBankVersionId: string
     scoringConfigVersionId: string
     sessionStatus?: string
@@ -51089,7 +51529,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     assessmentRequest: AssessmentRequestCreateNestedOneWithoutExamSessionInput
     patient: UserCreateNestedOneWithoutPatientSessionsInput
-    doctor: UserCreateNestedOneWithoutAssignedSessionsInput
+    doctor?: UserCreateNestedOneWithoutAssignedSessionsInput
     instrumentVersion: InstrumentVersionCreateNestedOneWithoutExamSessionsInput
     scoringConfigVersion: ScoringConfigVersionCreateNestedOneWithoutExamSessionsInput
     answers?: SessionAnswerCreateNestedManyWithoutExamSessionInput
@@ -51102,7 +51542,7 @@ export namespace Prisma {
     id?: string
     assessmentRequestId: string
     patientUserId: string
-    doctorUserId: string
+    doctorUserId?: string | null
     instrumentVersionId: string
     scoringConfigVersionId: string
     sessionStatus?: string
@@ -51452,7 +51892,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     assessmentRequest: AssessmentRequestCreateNestedOneWithoutExamSessionInput
     patient: UserCreateNestedOneWithoutPatientSessionsInput
-    doctor: UserCreateNestedOneWithoutAssignedSessionsInput
+    doctor?: UserCreateNestedOneWithoutAssignedSessionsInput
     instrumentVersion: InstrumentVersionCreateNestedOneWithoutExamSessionsInput
     questionBankVersion: QuestionBankVersionCreateNestedOneWithoutExamSessionsInput
     answers?: SessionAnswerCreateNestedManyWithoutExamSessionInput
@@ -51465,7 +51905,7 @@ export namespace Prisma {
     id?: string
     assessmentRequestId: string
     patientUserId: string
-    doctorUserId: string
+    doctorUserId?: string | null
     instrumentVersionId: string
     questionBankVersionId: string
     sessionStatus?: string
@@ -52164,6 +52604,7 @@ export namespace Prisma {
     roleAssignments?: UserRoleAssignmentCreateNestedManyWithoutUserInput
     patientProfile?: PatientProfileCreateNestedOneWithoutUserInput
     doctorProfile?: DoctorProfileCreateNestedOneWithoutUserInput
+    assignedRequests?: AssessmentRequestCreateNestedManyWithoutAssignedDoctorInput
     assignedSessions?: ExamSessionCreateNestedManyWithoutDoctorInput
     patientSessions?: ExamSessionCreateNestedManyWithoutPatientInput
     authoredClinicalReports?: ClinicalReportCreateNestedManyWithoutAuthoredByInput
@@ -52183,6 +52624,7 @@ export namespace Prisma {
     roleAssignments?: UserRoleAssignmentUncheckedCreateNestedManyWithoutUserInput
     patientProfile?: PatientProfileUncheckedCreateNestedOneWithoutUserInput
     doctorProfile?: DoctorProfileUncheckedCreateNestedOneWithoutUserInput
+    assignedRequests?: AssessmentRequestUncheckedCreateNestedManyWithoutAssignedDoctorInput
     assignedSessions?: ExamSessionUncheckedCreateNestedManyWithoutDoctorInput
     patientSessions?: ExamSessionUncheckedCreateNestedManyWithoutPatientInput
     authoredClinicalReports?: ClinicalReportUncheckedCreateNestedManyWithoutAuthoredByInput
@@ -52194,6 +52636,51 @@ export namespace Prisma {
   export type UserCreateOrConnectWithoutAssessmentRequestsInput = {
     where: UserWhereUniqueInput
     create: XOR<UserCreateWithoutAssessmentRequestsInput, UserUncheckedCreateWithoutAssessmentRequestsInput>
+  }
+
+  export type UserCreateWithoutAssignedRequestsInput = {
+    id?: string
+    email: string
+    fullName: string
+    passwordHash: string
+    accountStatus?: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    roleAssignments?: UserRoleAssignmentCreateNestedManyWithoutUserInput
+    patientProfile?: PatientProfileCreateNestedOneWithoutUserInput
+    doctorProfile?: DoctorProfileCreateNestedOneWithoutUserInput
+    assessmentRequests?: AssessmentRequestCreateNestedManyWithoutPatientInput
+    assignedSessions?: ExamSessionCreateNestedManyWithoutDoctorInput
+    patientSessions?: ExamSessionCreateNestedManyWithoutPatientInput
+    authoredClinicalReports?: ClinicalReportCreateNestedManyWithoutAuthoredByInput
+    sessionEventsAsActor?: SessionEventCreateNestedManyWithoutActorInput
+    auditLogsAsActor?: AuditLogCreateNestedManyWithoutActorInput
+    appSettingsUpdates?: AppSettingsCreateNestedManyWithoutUpdatedByInput
+  }
+
+  export type UserUncheckedCreateWithoutAssignedRequestsInput = {
+    id?: string
+    email: string
+    fullName: string
+    passwordHash: string
+    accountStatus?: string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+    roleAssignments?: UserRoleAssignmentUncheckedCreateNestedManyWithoutUserInput
+    patientProfile?: PatientProfileUncheckedCreateNestedOneWithoutUserInput
+    doctorProfile?: DoctorProfileUncheckedCreateNestedOneWithoutUserInput
+    assessmentRequests?: AssessmentRequestUncheckedCreateNestedManyWithoutPatientInput
+    assignedSessions?: ExamSessionUncheckedCreateNestedManyWithoutDoctorInput
+    patientSessions?: ExamSessionUncheckedCreateNestedManyWithoutPatientInput
+    authoredClinicalReports?: ClinicalReportUncheckedCreateNestedManyWithoutAuthoredByInput
+    sessionEventsAsActor?: SessionEventUncheckedCreateNestedManyWithoutActorInput
+    auditLogsAsActor?: AuditLogUncheckedCreateNestedManyWithoutActorInput
+    appSettingsUpdates?: AppSettingsUncheckedCreateNestedManyWithoutUpdatedByInput
+  }
+
+  export type UserCreateOrConnectWithoutAssignedRequestsInput = {
+    where: UserWhereUniqueInput
+    create: XOR<UserCreateWithoutAssignedRequestsInput, UserUncheckedCreateWithoutAssignedRequestsInput>
   }
 
   export type AssessmentTypeCreateWithoutAssessmentRequestsInput = {
@@ -52313,7 +52800,7 @@ export namespace Prisma {
     createdAt?: Date | string
     updatedAt?: Date | string
     patient: UserCreateNestedOneWithoutPatientSessionsInput
-    doctor: UserCreateNestedOneWithoutAssignedSessionsInput
+    doctor?: UserCreateNestedOneWithoutAssignedSessionsInput
     instrumentVersion: InstrumentVersionCreateNestedOneWithoutExamSessionsInput
     questionBankVersion: QuestionBankVersionCreateNestedOneWithoutExamSessionsInput
     scoringConfigVersion: ScoringConfigVersionCreateNestedOneWithoutExamSessionsInput
@@ -52326,7 +52813,7 @@ export namespace Prisma {
   export type ExamSessionUncheckedCreateWithoutAssessmentRequestInput = {
     id?: string
     patientUserId: string
-    doctorUserId: string
+    doctorUserId?: string | null
     instrumentVersionId: string
     questionBankVersionId: string
     scoringConfigVersionId: string
@@ -52371,6 +52858,7 @@ export namespace Prisma {
     roleAssignments?: UserRoleAssignmentUpdateManyWithoutUserNestedInput
     patientProfile?: PatientProfileUpdateOneWithoutUserNestedInput
     doctorProfile?: DoctorProfileUpdateOneWithoutUserNestedInput
+    assignedRequests?: AssessmentRequestUpdateManyWithoutAssignedDoctorNestedInput
     assignedSessions?: ExamSessionUpdateManyWithoutDoctorNestedInput
     patientSessions?: ExamSessionUpdateManyWithoutPatientNestedInput
     authoredClinicalReports?: ClinicalReportUpdateManyWithoutAuthoredByNestedInput
@@ -52390,6 +52878,58 @@ export namespace Prisma {
     roleAssignments?: UserRoleAssignmentUncheckedUpdateManyWithoutUserNestedInput
     patientProfile?: PatientProfileUncheckedUpdateOneWithoutUserNestedInput
     doctorProfile?: DoctorProfileUncheckedUpdateOneWithoutUserNestedInput
+    assignedRequests?: AssessmentRequestUncheckedUpdateManyWithoutAssignedDoctorNestedInput
+    assignedSessions?: ExamSessionUncheckedUpdateManyWithoutDoctorNestedInput
+    patientSessions?: ExamSessionUncheckedUpdateManyWithoutPatientNestedInput
+    authoredClinicalReports?: ClinicalReportUncheckedUpdateManyWithoutAuthoredByNestedInput
+    sessionEventsAsActor?: SessionEventUncheckedUpdateManyWithoutActorNestedInput
+    auditLogsAsActor?: AuditLogUncheckedUpdateManyWithoutActorNestedInput
+    appSettingsUpdates?: AppSettingsUncheckedUpdateManyWithoutUpdatedByNestedInput
+  }
+
+  export type UserUpsertWithoutAssignedRequestsInput = {
+    update: XOR<UserUpdateWithoutAssignedRequestsInput, UserUncheckedUpdateWithoutAssignedRequestsInput>
+    create: XOR<UserCreateWithoutAssignedRequestsInput, UserUncheckedCreateWithoutAssignedRequestsInput>
+    where?: UserWhereInput
+  }
+
+  export type UserUpdateToOneWithWhereWithoutAssignedRequestsInput = {
+    where?: UserWhereInput
+    data: XOR<UserUpdateWithoutAssignedRequestsInput, UserUncheckedUpdateWithoutAssignedRequestsInput>
+  }
+
+  export type UserUpdateWithoutAssignedRequestsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    fullName?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
+    accountStatus?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    roleAssignments?: UserRoleAssignmentUpdateManyWithoutUserNestedInput
+    patientProfile?: PatientProfileUpdateOneWithoutUserNestedInput
+    doctorProfile?: DoctorProfileUpdateOneWithoutUserNestedInput
+    assessmentRequests?: AssessmentRequestUpdateManyWithoutPatientNestedInput
+    assignedSessions?: ExamSessionUpdateManyWithoutDoctorNestedInput
+    patientSessions?: ExamSessionUpdateManyWithoutPatientNestedInput
+    authoredClinicalReports?: ClinicalReportUpdateManyWithoutAuthoredByNestedInput
+    sessionEventsAsActor?: SessionEventUpdateManyWithoutActorNestedInput
+    auditLogsAsActor?: AuditLogUpdateManyWithoutActorNestedInput
+    appSettingsUpdates?: AppSettingsUpdateManyWithoutUpdatedByNestedInput
+  }
+
+  export type UserUncheckedUpdateWithoutAssignedRequestsInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    email?: StringFieldUpdateOperationsInput | string
+    fullName?: StringFieldUpdateOperationsInput | string
+    passwordHash?: StringFieldUpdateOperationsInput | string
+    accountStatus?: StringFieldUpdateOperationsInput | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    roleAssignments?: UserRoleAssignmentUncheckedUpdateManyWithoutUserNestedInput
+    patientProfile?: PatientProfileUncheckedUpdateOneWithoutUserNestedInput
+    doctorProfile?: DoctorProfileUncheckedUpdateOneWithoutUserNestedInput
+    assessmentRequests?: AssessmentRequestUncheckedUpdateManyWithoutPatientNestedInput
     assignedSessions?: ExamSessionUncheckedUpdateManyWithoutDoctorNestedInput
     patientSessions?: ExamSessionUncheckedUpdateManyWithoutPatientNestedInput
     authoredClinicalReports?: ClinicalReportUncheckedUpdateManyWithoutAuthoredByNestedInput
@@ -52529,7 +53069,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     patient?: UserUpdateOneRequiredWithoutPatientSessionsNestedInput
-    doctor?: UserUpdateOneRequiredWithoutAssignedSessionsNestedInput
+    doctor?: UserUpdateOneWithoutAssignedSessionsNestedInput
     instrumentVersion?: InstrumentVersionUpdateOneRequiredWithoutExamSessionsNestedInput
     questionBankVersion?: QuestionBankVersionUpdateOneRequiredWithoutExamSessionsNestedInput
     scoringConfigVersion?: ScoringConfigVersionUpdateOneRequiredWithoutExamSessionsNestedInput
@@ -52542,7 +53082,7 @@ export namespace Prisma {
   export type ExamSessionUncheckedUpdateWithoutAssessmentRequestInput = {
     id?: StringFieldUpdateOperationsInput | string
     patientUserId?: StringFieldUpdateOperationsInput | string
-    doctorUserId?: StringFieldUpdateOperationsInput | string
+    doctorUserId?: NullableStringFieldUpdateOperationsInput | string | null
     instrumentVersionId?: StringFieldUpdateOperationsInput | string
     questionBankVersionId?: StringFieldUpdateOperationsInput | string
     scoringConfigVersionId?: StringFieldUpdateOperationsInput | string
@@ -52563,13 +53103,16 @@ export namespace Prisma {
   export type AssessmentRequestCreateWithoutExamSessionInput = {
     id?: string
     requestStatus?: string
+    billingModeSnapshot?: string | null
     paymentRequirement?: string
     paymentSatisfied?: boolean
     purpose?: string | null
+    adminNote?: string | null
     requestedAt?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
     patient: UserCreateNestedOneWithoutAssessmentRequestsInput
+    assignedDoctor?: UserCreateNestedOneWithoutAssignedRequestsInput
     assessmentType: AssessmentTypeCreateNestedOneWithoutAssessmentRequestsInput
     activePayment?: PaymentCreateNestedOneWithoutActiveForRequestInput
     payments?: PaymentCreateNestedManyWithoutAssessmentRequestInput
@@ -52580,10 +53123,13 @@ export namespace Prisma {
     patientUserId: string
     assessmentTypeId: string
     requestStatus?: string
+    billingModeSnapshot?: string | null
     paymentRequirement?: string
     paymentSatisfied?: boolean
     activePaymentId?: string | null
+    doctorUserId?: string | null
     purpose?: string | null
+    adminNote?: string | null
     requestedAt?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -52607,6 +53153,7 @@ export namespace Prisma {
     patientProfile?: PatientProfileCreateNestedOneWithoutUserInput
     doctorProfile?: DoctorProfileCreateNestedOneWithoutUserInput
     assessmentRequests?: AssessmentRequestCreateNestedManyWithoutPatientInput
+    assignedRequests?: AssessmentRequestCreateNestedManyWithoutAssignedDoctorInput
     assignedSessions?: ExamSessionCreateNestedManyWithoutDoctorInput
     authoredClinicalReports?: ClinicalReportCreateNestedManyWithoutAuthoredByInput
     sessionEventsAsActor?: SessionEventCreateNestedManyWithoutActorInput
@@ -52626,6 +53173,7 @@ export namespace Prisma {
     patientProfile?: PatientProfileUncheckedCreateNestedOneWithoutUserInput
     doctorProfile?: DoctorProfileUncheckedCreateNestedOneWithoutUserInput
     assessmentRequests?: AssessmentRequestUncheckedCreateNestedManyWithoutPatientInput
+    assignedRequests?: AssessmentRequestUncheckedCreateNestedManyWithoutAssignedDoctorInput
     assignedSessions?: ExamSessionUncheckedCreateNestedManyWithoutDoctorInput
     authoredClinicalReports?: ClinicalReportUncheckedCreateNestedManyWithoutAuthoredByInput
     sessionEventsAsActor?: SessionEventUncheckedCreateNestedManyWithoutActorInput
@@ -52650,6 +53198,7 @@ export namespace Prisma {
     patientProfile?: PatientProfileCreateNestedOneWithoutUserInput
     doctorProfile?: DoctorProfileCreateNestedOneWithoutUserInput
     assessmentRequests?: AssessmentRequestCreateNestedManyWithoutPatientInput
+    assignedRequests?: AssessmentRequestCreateNestedManyWithoutAssignedDoctorInput
     patientSessions?: ExamSessionCreateNestedManyWithoutPatientInput
     authoredClinicalReports?: ClinicalReportCreateNestedManyWithoutAuthoredByInput
     sessionEventsAsActor?: SessionEventCreateNestedManyWithoutActorInput
@@ -52669,6 +53218,7 @@ export namespace Prisma {
     patientProfile?: PatientProfileUncheckedCreateNestedOneWithoutUserInput
     doctorProfile?: DoctorProfileUncheckedCreateNestedOneWithoutUserInput
     assessmentRequests?: AssessmentRequestUncheckedCreateNestedManyWithoutPatientInput
+    assignedRequests?: AssessmentRequestUncheckedCreateNestedManyWithoutAssignedDoctorInput
     patientSessions?: ExamSessionUncheckedCreateNestedManyWithoutPatientInput
     authoredClinicalReports?: ClinicalReportUncheckedCreateNestedManyWithoutAuthoredByInput
     sessionEventsAsActor?: SessionEventUncheckedCreateNestedManyWithoutActorInput
@@ -52914,13 +53464,16 @@ export namespace Prisma {
   export type AssessmentRequestUpdateWithoutExamSessionInput = {
     id?: StringFieldUpdateOperationsInput | string
     requestStatus?: StringFieldUpdateOperationsInput | string
+    billingModeSnapshot?: NullableStringFieldUpdateOperationsInput | string | null
     paymentRequirement?: StringFieldUpdateOperationsInput | string
     paymentSatisfied?: BoolFieldUpdateOperationsInput | boolean
     purpose?: NullableStringFieldUpdateOperationsInput | string | null
+    adminNote?: NullableStringFieldUpdateOperationsInput | string | null
     requestedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     patient?: UserUpdateOneRequiredWithoutAssessmentRequestsNestedInput
+    assignedDoctor?: UserUpdateOneWithoutAssignedRequestsNestedInput
     assessmentType?: AssessmentTypeUpdateOneRequiredWithoutAssessmentRequestsNestedInput
     activePayment?: PaymentUpdateOneWithoutActiveForRequestNestedInput
     payments?: PaymentUpdateManyWithoutAssessmentRequestNestedInput
@@ -52931,10 +53484,13 @@ export namespace Prisma {
     patientUserId?: StringFieldUpdateOperationsInput | string
     assessmentTypeId?: StringFieldUpdateOperationsInput | string
     requestStatus?: StringFieldUpdateOperationsInput | string
+    billingModeSnapshot?: NullableStringFieldUpdateOperationsInput | string | null
     paymentRequirement?: StringFieldUpdateOperationsInput | string
     paymentSatisfied?: BoolFieldUpdateOperationsInput | boolean
     activePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    doctorUserId?: NullableStringFieldUpdateOperationsInput | string | null
     purpose?: NullableStringFieldUpdateOperationsInput | string | null
+    adminNote?: NullableStringFieldUpdateOperationsInput | string | null
     requestedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -52964,6 +53520,7 @@ export namespace Prisma {
     patientProfile?: PatientProfileUpdateOneWithoutUserNestedInput
     doctorProfile?: DoctorProfileUpdateOneWithoutUserNestedInput
     assessmentRequests?: AssessmentRequestUpdateManyWithoutPatientNestedInput
+    assignedRequests?: AssessmentRequestUpdateManyWithoutAssignedDoctorNestedInput
     assignedSessions?: ExamSessionUpdateManyWithoutDoctorNestedInput
     authoredClinicalReports?: ClinicalReportUpdateManyWithoutAuthoredByNestedInput
     sessionEventsAsActor?: SessionEventUpdateManyWithoutActorNestedInput
@@ -52983,6 +53540,7 @@ export namespace Prisma {
     patientProfile?: PatientProfileUncheckedUpdateOneWithoutUserNestedInput
     doctorProfile?: DoctorProfileUncheckedUpdateOneWithoutUserNestedInput
     assessmentRequests?: AssessmentRequestUncheckedUpdateManyWithoutPatientNestedInput
+    assignedRequests?: AssessmentRequestUncheckedUpdateManyWithoutAssignedDoctorNestedInput
     assignedSessions?: ExamSessionUncheckedUpdateManyWithoutDoctorNestedInput
     authoredClinicalReports?: ClinicalReportUncheckedUpdateManyWithoutAuthoredByNestedInput
     sessionEventsAsActor?: SessionEventUncheckedUpdateManyWithoutActorNestedInput
@@ -53013,6 +53571,7 @@ export namespace Prisma {
     patientProfile?: PatientProfileUpdateOneWithoutUserNestedInput
     doctorProfile?: DoctorProfileUpdateOneWithoutUserNestedInput
     assessmentRequests?: AssessmentRequestUpdateManyWithoutPatientNestedInput
+    assignedRequests?: AssessmentRequestUpdateManyWithoutAssignedDoctorNestedInput
     patientSessions?: ExamSessionUpdateManyWithoutPatientNestedInput
     authoredClinicalReports?: ClinicalReportUpdateManyWithoutAuthoredByNestedInput
     sessionEventsAsActor?: SessionEventUpdateManyWithoutActorNestedInput
@@ -53032,6 +53591,7 @@ export namespace Prisma {
     patientProfile?: PatientProfileUncheckedUpdateOneWithoutUserNestedInput
     doctorProfile?: DoctorProfileUncheckedUpdateOneWithoutUserNestedInput
     assessmentRequests?: AssessmentRequestUncheckedUpdateManyWithoutPatientNestedInput
+    assignedRequests?: AssessmentRequestUncheckedUpdateManyWithoutAssignedDoctorNestedInput
     patientSessions?: ExamSessionUncheckedUpdateManyWithoutPatientNestedInput
     authoredClinicalReports?: ClinicalReportUncheckedUpdateManyWithoutAuthoredByNestedInput
     sessionEventsAsActor?: SessionEventUncheckedUpdateManyWithoutActorNestedInput
@@ -53232,7 +53792,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     assessmentRequest: AssessmentRequestCreateNestedOneWithoutExamSessionInput
     patient: UserCreateNestedOneWithoutPatientSessionsInput
-    doctor: UserCreateNestedOneWithoutAssignedSessionsInput
+    doctor?: UserCreateNestedOneWithoutAssignedSessionsInput
     instrumentVersion: InstrumentVersionCreateNestedOneWithoutExamSessionsInput
     questionBankVersion: QuestionBankVersionCreateNestedOneWithoutExamSessionsInput
     scoringConfigVersion: ScoringConfigVersionCreateNestedOneWithoutExamSessionsInput
@@ -53245,7 +53805,7 @@ export namespace Prisma {
     id?: string
     assessmentRequestId: string
     patientUserId: string
-    doctorUserId: string
+    doctorUserId?: string | null
     instrumentVersionId: string
     questionBankVersionId: string
     scoringConfigVersionId: string
@@ -53311,7 +53871,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assessmentRequest?: AssessmentRequestUpdateOneRequiredWithoutExamSessionNestedInput
     patient?: UserUpdateOneRequiredWithoutPatientSessionsNestedInput
-    doctor?: UserUpdateOneRequiredWithoutAssignedSessionsNestedInput
+    doctor?: UserUpdateOneWithoutAssignedSessionsNestedInput
     instrumentVersion?: InstrumentVersionUpdateOneRequiredWithoutExamSessionsNestedInput
     questionBankVersion?: QuestionBankVersionUpdateOneRequiredWithoutExamSessionsNestedInput
     scoringConfigVersion?: ScoringConfigVersionUpdateOneRequiredWithoutExamSessionsNestedInput
@@ -53324,7 +53884,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     assessmentRequestId?: StringFieldUpdateOperationsInput | string
     patientUserId?: StringFieldUpdateOperationsInput | string
-    doctorUserId?: StringFieldUpdateOperationsInput | string
+    doctorUserId?: NullableStringFieldUpdateOperationsInput | string | null
     instrumentVersionId?: StringFieldUpdateOperationsInput | string
     questionBankVersionId?: StringFieldUpdateOperationsInput | string
     scoringConfigVersionId?: StringFieldUpdateOperationsInput | string
@@ -53380,7 +53940,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     assessmentRequest: AssessmentRequestCreateNestedOneWithoutExamSessionInput
     patient: UserCreateNestedOneWithoutPatientSessionsInput
-    doctor: UserCreateNestedOneWithoutAssignedSessionsInput
+    doctor?: UserCreateNestedOneWithoutAssignedSessionsInput
     instrumentVersion: InstrumentVersionCreateNestedOneWithoutExamSessionsInput
     questionBankVersion: QuestionBankVersionCreateNestedOneWithoutExamSessionsInput
     scoringConfigVersion: ScoringConfigVersionCreateNestedOneWithoutExamSessionsInput
@@ -53393,7 +53953,7 @@ export namespace Prisma {
     id?: string
     assessmentRequestId: string
     patientUserId: string
-    doctorUserId: string
+    doctorUserId?: string | null
     instrumentVersionId: string
     questionBankVersionId: string
     scoringConfigVersionId: string
@@ -53427,6 +53987,7 @@ export namespace Prisma {
     patientProfile?: PatientProfileCreateNestedOneWithoutUserInput
     doctorProfile?: DoctorProfileCreateNestedOneWithoutUserInput
     assessmentRequests?: AssessmentRequestCreateNestedManyWithoutPatientInput
+    assignedRequests?: AssessmentRequestCreateNestedManyWithoutAssignedDoctorInput
     assignedSessions?: ExamSessionCreateNestedManyWithoutDoctorInput
     patientSessions?: ExamSessionCreateNestedManyWithoutPatientInput
     authoredClinicalReports?: ClinicalReportCreateNestedManyWithoutAuthoredByInput
@@ -53446,6 +54007,7 @@ export namespace Prisma {
     patientProfile?: PatientProfileUncheckedCreateNestedOneWithoutUserInput
     doctorProfile?: DoctorProfileUncheckedCreateNestedOneWithoutUserInput
     assessmentRequests?: AssessmentRequestUncheckedCreateNestedManyWithoutPatientInput
+    assignedRequests?: AssessmentRequestUncheckedCreateNestedManyWithoutAssignedDoctorInput
     assignedSessions?: ExamSessionUncheckedCreateNestedManyWithoutDoctorInput
     patientSessions?: ExamSessionUncheckedCreateNestedManyWithoutPatientInput
     authoredClinicalReports?: ClinicalReportUncheckedCreateNestedManyWithoutAuthoredByInput
@@ -53481,7 +54043,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assessmentRequest?: AssessmentRequestUpdateOneRequiredWithoutExamSessionNestedInput
     patient?: UserUpdateOneRequiredWithoutPatientSessionsNestedInput
-    doctor?: UserUpdateOneRequiredWithoutAssignedSessionsNestedInput
+    doctor?: UserUpdateOneWithoutAssignedSessionsNestedInput
     instrumentVersion?: InstrumentVersionUpdateOneRequiredWithoutExamSessionsNestedInput
     questionBankVersion?: QuestionBankVersionUpdateOneRequiredWithoutExamSessionsNestedInput
     scoringConfigVersion?: ScoringConfigVersionUpdateOneRequiredWithoutExamSessionsNestedInput
@@ -53494,7 +54056,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     assessmentRequestId?: StringFieldUpdateOperationsInput | string
     patientUserId?: StringFieldUpdateOperationsInput | string
-    doctorUserId?: StringFieldUpdateOperationsInput | string
+    doctorUserId?: NullableStringFieldUpdateOperationsInput | string | null
     instrumentVersionId?: StringFieldUpdateOperationsInput | string
     questionBankVersionId?: StringFieldUpdateOperationsInput | string
     scoringConfigVersionId?: StringFieldUpdateOperationsInput | string
@@ -53534,6 +54096,7 @@ export namespace Prisma {
     patientProfile?: PatientProfileUpdateOneWithoutUserNestedInput
     doctorProfile?: DoctorProfileUpdateOneWithoutUserNestedInput
     assessmentRequests?: AssessmentRequestUpdateManyWithoutPatientNestedInput
+    assignedRequests?: AssessmentRequestUpdateManyWithoutAssignedDoctorNestedInput
     assignedSessions?: ExamSessionUpdateManyWithoutDoctorNestedInput
     patientSessions?: ExamSessionUpdateManyWithoutPatientNestedInput
     authoredClinicalReports?: ClinicalReportUpdateManyWithoutAuthoredByNestedInput
@@ -53553,6 +54116,7 @@ export namespace Prisma {
     patientProfile?: PatientProfileUncheckedUpdateOneWithoutUserNestedInput
     doctorProfile?: DoctorProfileUncheckedUpdateOneWithoutUserNestedInput
     assessmentRequests?: AssessmentRequestUncheckedUpdateManyWithoutPatientNestedInput
+    assignedRequests?: AssessmentRequestUncheckedUpdateManyWithoutAssignedDoctorNestedInput
     assignedSessions?: ExamSessionUncheckedUpdateManyWithoutDoctorNestedInput
     patientSessions?: ExamSessionUncheckedUpdateManyWithoutPatientNestedInput
     authoredClinicalReports?: ClinicalReportUncheckedUpdateManyWithoutAuthoredByNestedInput
@@ -53563,13 +54127,16 @@ export namespace Prisma {
   export type AssessmentRequestCreateWithoutPaymentsInput = {
     id?: string
     requestStatus?: string
+    billingModeSnapshot?: string | null
     paymentRequirement?: string
     paymentSatisfied?: boolean
     purpose?: string | null
+    adminNote?: string | null
     requestedAt?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
     patient: UserCreateNestedOneWithoutAssessmentRequestsInput
+    assignedDoctor?: UserCreateNestedOneWithoutAssignedRequestsInput
     assessmentType: AssessmentTypeCreateNestedOneWithoutAssessmentRequestsInput
     activePayment?: PaymentCreateNestedOneWithoutActiveForRequestInput
     examSession?: ExamSessionCreateNestedOneWithoutAssessmentRequestInput
@@ -53580,10 +54147,13 @@ export namespace Prisma {
     patientUserId: string
     assessmentTypeId: string
     requestStatus?: string
+    billingModeSnapshot?: string | null
     paymentRequirement?: string
     paymentSatisfied?: boolean
     activePaymentId?: string | null
+    doctorUserId?: string | null
     purpose?: string | null
+    adminNote?: string | null
     requestedAt?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -53598,13 +54168,16 @@ export namespace Prisma {
   export type AssessmentRequestCreateWithoutActivePaymentInput = {
     id?: string
     requestStatus?: string
+    billingModeSnapshot?: string | null
     paymentRequirement?: string
     paymentSatisfied?: boolean
     purpose?: string | null
+    adminNote?: string | null
     requestedAt?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
     patient: UserCreateNestedOneWithoutAssessmentRequestsInput
+    assignedDoctor?: UserCreateNestedOneWithoutAssignedRequestsInput
     assessmentType: AssessmentTypeCreateNestedOneWithoutAssessmentRequestsInput
     payments?: PaymentCreateNestedManyWithoutAssessmentRequestInput
     examSession?: ExamSessionCreateNestedOneWithoutAssessmentRequestInput
@@ -53615,9 +54188,12 @@ export namespace Prisma {
     patientUserId: string
     assessmentTypeId: string
     requestStatus?: string
+    billingModeSnapshot?: string | null
     paymentRequirement?: string
     paymentSatisfied?: boolean
+    doctorUserId?: string | null
     purpose?: string | null
+    adminNote?: string | null
     requestedAt?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -53680,13 +54256,16 @@ export namespace Prisma {
   export type AssessmentRequestUpdateWithoutPaymentsInput = {
     id?: StringFieldUpdateOperationsInput | string
     requestStatus?: StringFieldUpdateOperationsInput | string
+    billingModeSnapshot?: NullableStringFieldUpdateOperationsInput | string | null
     paymentRequirement?: StringFieldUpdateOperationsInput | string
     paymentSatisfied?: BoolFieldUpdateOperationsInput | boolean
     purpose?: NullableStringFieldUpdateOperationsInput | string | null
+    adminNote?: NullableStringFieldUpdateOperationsInput | string | null
     requestedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     patient?: UserUpdateOneRequiredWithoutAssessmentRequestsNestedInput
+    assignedDoctor?: UserUpdateOneWithoutAssignedRequestsNestedInput
     assessmentType?: AssessmentTypeUpdateOneRequiredWithoutAssessmentRequestsNestedInput
     activePayment?: PaymentUpdateOneWithoutActiveForRequestNestedInput
     examSession?: ExamSessionUpdateOneWithoutAssessmentRequestNestedInput
@@ -53697,10 +54276,13 @@ export namespace Prisma {
     patientUserId?: StringFieldUpdateOperationsInput | string
     assessmentTypeId?: StringFieldUpdateOperationsInput | string
     requestStatus?: StringFieldUpdateOperationsInput | string
+    billingModeSnapshot?: NullableStringFieldUpdateOperationsInput | string | null
     paymentRequirement?: StringFieldUpdateOperationsInput | string
     paymentSatisfied?: BoolFieldUpdateOperationsInput | boolean
     activePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    doctorUserId?: NullableStringFieldUpdateOperationsInput | string | null
     purpose?: NullableStringFieldUpdateOperationsInput | string | null
+    adminNote?: NullableStringFieldUpdateOperationsInput | string | null
     requestedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -53721,13 +54303,16 @@ export namespace Prisma {
   export type AssessmentRequestUpdateWithoutActivePaymentInput = {
     id?: StringFieldUpdateOperationsInput | string
     requestStatus?: StringFieldUpdateOperationsInput | string
+    billingModeSnapshot?: NullableStringFieldUpdateOperationsInput | string | null
     paymentRequirement?: StringFieldUpdateOperationsInput | string
     paymentSatisfied?: BoolFieldUpdateOperationsInput | boolean
     purpose?: NullableStringFieldUpdateOperationsInput | string | null
+    adminNote?: NullableStringFieldUpdateOperationsInput | string | null
     requestedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     patient?: UserUpdateOneRequiredWithoutAssessmentRequestsNestedInput
+    assignedDoctor?: UserUpdateOneWithoutAssignedRequestsNestedInput
     assessmentType?: AssessmentTypeUpdateOneRequiredWithoutAssessmentRequestsNestedInput
     payments?: PaymentUpdateManyWithoutAssessmentRequestNestedInput
     examSession?: ExamSessionUpdateOneWithoutAssessmentRequestNestedInput
@@ -53738,9 +54323,12 @@ export namespace Prisma {
     patientUserId?: StringFieldUpdateOperationsInput | string
     assessmentTypeId?: StringFieldUpdateOperationsInput | string
     requestStatus?: StringFieldUpdateOperationsInput | string
+    billingModeSnapshot?: NullableStringFieldUpdateOperationsInput | string | null
     paymentRequirement?: StringFieldUpdateOperationsInput | string
     paymentSatisfied?: BoolFieldUpdateOperationsInput | boolean
+    doctorUserId?: NullableStringFieldUpdateOperationsInput | string | null
     purpose?: NullableStringFieldUpdateOperationsInput | string | null
+    adminNote?: NullableStringFieldUpdateOperationsInput | string | null
     requestedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -53877,7 +54465,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     assessmentRequest: AssessmentRequestCreateNestedOneWithoutExamSessionInput
     patient: UserCreateNestedOneWithoutPatientSessionsInput
-    doctor: UserCreateNestedOneWithoutAssignedSessionsInput
+    doctor?: UserCreateNestedOneWithoutAssignedSessionsInput
     instrumentVersion: InstrumentVersionCreateNestedOneWithoutExamSessionsInput
     questionBankVersion: QuestionBankVersionCreateNestedOneWithoutExamSessionsInput
     scoringConfigVersion: ScoringConfigVersionCreateNestedOneWithoutExamSessionsInput
@@ -53890,7 +54478,7 @@ export namespace Prisma {
     id?: string
     assessmentRequestId: string
     patientUserId: string
-    doctorUserId: string
+    doctorUserId?: string | null
     instrumentVersionId: string
     questionBankVersionId: string
     scoringConfigVersionId: string
@@ -54232,7 +54820,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assessmentRequest?: AssessmentRequestUpdateOneRequiredWithoutExamSessionNestedInput
     patient?: UserUpdateOneRequiredWithoutPatientSessionsNestedInput
-    doctor?: UserUpdateOneRequiredWithoutAssignedSessionsNestedInput
+    doctor?: UserUpdateOneWithoutAssignedSessionsNestedInput
     instrumentVersion?: InstrumentVersionUpdateOneRequiredWithoutExamSessionsNestedInput
     questionBankVersion?: QuestionBankVersionUpdateOneRequiredWithoutExamSessionsNestedInput
     scoringConfigVersion?: ScoringConfigVersionUpdateOneRequiredWithoutExamSessionsNestedInput
@@ -54245,7 +54833,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     assessmentRequestId?: StringFieldUpdateOperationsInput | string
     patientUserId?: StringFieldUpdateOperationsInput | string
-    doctorUserId?: StringFieldUpdateOperationsInput | string
+    doctorUserId?: NullableStringFieldUpdateOperationsInput | string | null
     instrumentVersionId?: StringFieldUpdateOperationsInput | string
     questionBankVersionId?: StringFieldUpdateOperationsInput | string
     scoringConfigVersionId?: StringFieldUpdateOperationsInput | string
@@ -54888,6 +55476,7 @@ export namespace Prisma {
     patientProfile?: PatientProfileCreateNestedOneWithoutUserInput
     doctorProfile?: DoctorProfileCreateNestedOneWithoutUserInput
     assessmentRequests?: AssessmentRequestCreateNestedManyWithoutPatientInput
+    assignedRequests?: AssessmentRequestCreateNestedManyWithoutAssignedDoctorInput
     assignedSessions?: ExamSessionCreateNestedManyWithoutDoctorInput
     patientSessions?: ExamSessionCreateNestedManyWithoutPatientInput
     sessionEventsAsActor?: SessionEventCreateNestedManyWithoutActorInput
@@ -54907,6 +55496,7 @@ export namespace Prisma {
     patientProfile?: PatientProfileUncheckedCreateNestedOneWithoutUserInput
     doctorProfile?: DoctorProfileUncheckedCreateNestedOneWithoutUserInput
     assessmentRequests?: AssessmentRequestUncheckedCreateNestedManyWithoutPatientInput
+    assignedRequests?: AssessmentRequestUncheckedCreateNestedManyWithoutAssignedDoctorInput
     assignedSessions?: ExamSessionUncheckedCreateNestedManyWithoutDoctorInput
     patientSessions?: ExamSessionUncheckedCreateNestedManyWithoutPatientInput
     sessionEventsAsActor?: SessionEventUncheckedCreateNestedManyWithoutActorInput
@@ -55086,6 +55676,7 @@ export namespace Prisma {
     patientProfile?: PatientProfileUpdateOneWithoutUserNestedInput
     doctorProfile?: DoctorProfileUpdateOneWithoutUserNestedInput
     assessmentRequests?: AssessmentRequestUpdateManyWithoutPatientNestedInput
+    assignedRequests?: AssessmentRequestUpdateManyWithoutAssignedDoctorNestedInput
     assignedSessions?: ExamSessionUpdateManyWithoutDoctorNestedInput
     patientSessions?: ExamSessionUpdateManyWithoutPatientNestedInput
     sessionEventsAsActor?: SessionEventUpdateManyWithoutActorNestedInput
@@ -55105,6 +55696,7 @@ export namespace Prisma {
     patientProfile?: PatientProfileUncheckedUpdateOneWithoutUserNestedInput
     doctorProfile?: DoctorProfileUncheckedUpdateOneWithoutUserNestedInput
     assessmentRequests?: AssessmentRequestUncheckedUpdateManyWithoutPatientNestedInput
+    assignedRequests?: AssessmentRequestUncheckedUpdateManyWithoutAssignedDoctorNestedInput
     assignedSessions?: ExamSessionUncheckedUpdateManyWithoutDoctorNestedInput
     patientSessions?: ExamSessionUncheckedUpdateManyWithoutPatientNestedInput
     sessionEventsAsActor?: SessionEventUncheckedUpdateManyWithoutActorNestedInput
@@ -55632,7 +56224,7 @@ export namespace Prisma {
     updatedAt?: Date | string
     assessmentRequest: AssessmentRequestCreateNestedOneWithoutExamSessionInput
     patient: UserCreateNestedOneWithoutPatientSessionsInput
-    doctor: UserCreateNestedOneWithoutAssignedSessionsInput
+    doctor?: UserCreateNestedOneWithoutAssignedSessionsInput
     instrumentVersion: InstrumentVersionCreateNestedOneWithoutExamSessionsInput
     questionBankVersion: QuestionBankVersionCreateNestedOneWithoutExamSessionsInput
     scoringConfigVersion: ScoringConfigVersionCreateNestedOneWithoutExamSessionsInput
@@ -55645,7 +56237,7 @@ export namespace Prisma {
     id?: string
     assessmentRequestId: string
     patientUserId: string
-    doctorUserId: string
+    doctorUserId?: string | null
     instrumentVersionId: string
     questionBankVersionId: string
     scoringConfigVersionId: string
@@ -55690,7 +56282,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assessmentRequest?: AssessmentRequestUpdateOneRequiredWithoutExamSessionNestedInput
     patient?: UserUpdateOneRequiredWithoutPatientSessionsNestedInput
-    doctor?: UserUpdateOneRequiredWithoutAssignedSessionsNestedInput
+    doctor?: UserUpdateOneWithoutAssignedSessionsNestedInput
     instrumentVersion?: InstrumentVersionUpdateOneRequiredWithoutExamSessionsNestedInput
     questionBankVersion?: QuestionBankVersionUpdateOneRequiredWithoutExamSessionsNestedInput
     scoringConfigVersion?: ScoringConfigVersionUpdateOneRequiredWithoutExamSessionsNestedInput
@@ -55703,7 +56295,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     assessmentRequestId?: StringFieldUpdateOperationsInput | string
     patientUserId?: StringFieldUpdateOperationsInput | string
-    doctorUserId?: StringFieldUpdateOperationsInput | string
+    doctorUserId?: NullableStringFieldUpdateOperationsInput | string | null
     instrumentVersionId?: StringFieldUpdateOperationsInput | string
     questionBankVersionId?: StringFieldUpdateOperationsInput | string
     scoringConfigVersionId?: StringFieldUpdateOperationsInput | string
@@ -55732,6 +56324,7 @@ export namespace Prisma {
     patientProfile?: PatientProfileCreateNestedOneWithoutUserInput
     doctorProfile?: DoctorProfileCreateNestedOneWithoutUserInput
     assessmentRequests?: AssessmentRequestCreateNestedManyWithoutPatientInput
+    assignedRequests?: AssessmentRequestCreateNestedManyWithoutAssignedDoctorInput
     assignedSessions?: ExamSessionCreateNestedManyWithoutDoctorInput
     patientSessions?: ExamSessionCreateNestedManyWithoutPatientInput
     authoredClinicalReports?: ClinicalReportCreateNestedManyWithoutAuthoredByInput
@@ -55751,6 +56344,7 @@ export namespace Prisma {
     patientProfile?: PatientProfileUncheckedCreateNestedOneWithoutUserInput
     doctorProfile?: DoctorProfileUncheckedCreateNestedOneWithoutUserInput
     assessmentRequests?: AssessmentRequestUncheckedCreateNestedManyWithoutPatientInput
+    assignedRequests?: AssessmentRequestUncheckedCreateNestedManyWithoutAssignedDoctorInput
     assignedSessions?: ExamSessionUncheckedCreateNestedManyWithoutDoctorInput
     patientSessions?: ExamSessionUncheckedCreateNestedManyWithoutPatientInput
     authoredClinicalReports?: ClinicalReportUncheckedCreateNestedManyWithoutAuthoredByInput
@@ -55786,6 +56380,7 @@ export namespace Prisma {
     patientProfile?: PatientProfileUpdateOneWithoutUserNestedInput
     doctorProfile?: DoctorProfileUpdateOneWithoutUserNestedInput
     assessmentRequests?: AssessmentRequestUpdateManyWithoutPatientNestedInput
+    assignedRequests?: AssessmentRequestUpdateManyWithoutAssignedDoctorNestedInput
     assignedSessions?: ExamSessionUpdateManyWithoutDoctorNestedInput
     patientSessions?: ExamSessionUpdateManyWithoutPatientNestedInput
     authoredClinicalReports?: ClinicalReportUpdateManyWithoutAuthoredByNestedInput
@@ -55805,6 +56400,7 @@ export namespace Prisma {
     patientProfile?: PatientProfileUncheckedUpdateOneWithoutUserNestedInput
     doctorProfile?: DoctorProfileUncheckedUpdateOneWithoutUserNestedInput
     assessmentRequests?: AssessmentRequestUncheckedUpdateManyWithoutPatientNestedInput
+    assignedRequests?: AssessmentRequestUncheckedUpdateManyWithoutAssignedDoctorNestedInput
     assignedSessions?: ExamSessionUncheckedUpdateManyWithoutDoctorNestedInput
     patientSessions?: ExamSessionUncheckedUpdateManyWithoutPatientNestedInput
     authoredClinicalReports?: ClinicalReportUncheckedUpdateManyWithoutAuthoredByNestedInput
@@ -55823,10 +56419,29 @@ export namespace Prisma {
     id?: string
     assessmentTypeId: string
     requestStatus?: string
+    billingModeSnapshot?: string | null
+    paymentRequirement?: string
+    paymentSatisfied?: boolean
+    activePaymentId?: string | null
+    doctorUserId?: string | null
+    purpose?: string | null
+    adminNote?: string | null
+    requestedAt?: Date | string
+    createdAt?: Date | string
+    updatedAt?: Date | string
+  }
+
+  export type AssessmentRequestCreateManyAssignedDoctorInput = {
+    id?: string
+    patientUserId: string
+    assessmentTypeId: string
+    requestStatus?: string
+    billingModeSnapshot?: string | null
     paymentRequirement?: string
     paymentSatisfied?: boolean
     activePaymentId?: string | null
     purpose?: string | null
+    adminNote?: string | null
     requestedAt?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -55852,7 +56467,7 @@ export namespace Prisma {
   export type ExamSessionCreateManyPatientInput = {
     id?: string
     assessmentRequestId: string
-    doctorUserId: string
+    doctorUserId?: string | null
     instrumentVersionId: string
     questionBankVersionId: string
     scoringConfigVersionId: string
@@ -55902,6 +56517,8 @@ export namespace Prisma {
   export type AppSettingsCreateManyUpdatedByInput = {
     id?: string
     billingMode?: string
+    defaultCurrency?: string
+    defaultAmount?: Decimal | DecimalJsLike | number | string | null
     updatedAt?: Date | string
   }
 
@@ -55929,12 +56546,15 @@ export namespace Prisma {
   export type AssessmentRequestUpdateWithoutPatientInput = {
     id?: StringFieldUpdateOperationsInput | string
     requestStatus?: StringFieldUpdateOperationsInput | string
+    billingModeSnapshot?: NullableStringFieldUpdateOperationsInput | string | null
     paymentRequirement?: StringFieldUpdateOperationsInput | string
     paymentSatisfied?: BoolFieldUpdateOperationsInput | boolean
     purpose?: NullableStringFieldUpdateOperationsInput | string | null
+    adminNote?: NullableStringFieldUpdateOperationsInput | string | null
     requestedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    assignedDoctor?: UserUpdateOneWithoutAssignedRequestsNestedInput
     assessmentType?: AssessmentTypeUpdateOneRequiredWithoutAssessmentRequestsNestedInput
     activePayment?: PaymentUpdateOneWithoutActiveForRequestNestedInput
     payments?: PaymentUpdateManyWithoutAssessmentRequestNestedInput
@@ -55945,10 +56565,13 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     assessmentTypeId?: StringFieldUpdateOperationsInput | string
     requestStatus?: StringFieldUpdateOperationsInput | string
+    billingModeSnapshot?: NullableStringFieldUpdateOperationsInput | string | null
     paymentRequirement?: StringFieldUpdateOperationsInput | string
     paymentSatisfied?: BoolFieldUpdateOperationsInput | boolean
     activePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    doctorUserId?: NullableStringFieldUpdateOperationsInput | string | null
     purpose?: NullableStringFieldUpdateOperationsInput | string | null
+    adminNote?: NullableStringFieldUpdateOperationsInput | string | null
     requestedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -55960,10 +56583,65 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     assessmentTypeId?: StringFieldUpdateOperationsInput | string
     requestStatus?: StringFieldUpdateOperationsInput | string
+    billingModeSnapshot?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentRequirement?: StringFieldUpdateOperationsInput | string
+    paymentSatisfied?: BoolFieldUpdateOperationsInput | boolean
+    activePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    doctorUserId?: NullableStringFieldUpdateOperationsInput | string | null
+    purpose?: NullableStringFieldUpdateOperationsInput | string | null
+    adminNote?: NullableStringFieldUpdateOperationsInput | string | null
+    requestedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type AssessmentRequestUpdateWithoutAssignedDoctorInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    requestStatus?: StringFieldUpdateOperationsInput | string
+    billingModeSnapshot?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentRequirement?: StringFieldUpdateOperationsInput | string
+    paymentSatisfied?: BoolFieldUpdateOperationsInput | boolean
+    purpose?: NullableStringFieldUpdateOperationsInput | string | null
+    adminNote?: NullableStringFieldUpdateOperationsInput | string | null
+    requestedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    patient?: UserUpdateOneRequiredWithoutAssessmentRequestsNestedInput
+    assessmentType?: AssessmentTypeUpdateOneRequiredWithoutAssessmentRequestsNestedInput
+    activePayment?: PaymentUpdateOneWithoutActiveForRequestNestedInput
+    payments?: PaymentUpdateManyWithoutAssessmentRequestNestedInput
+    examSession?: ExamSessionUpdateOneWithoutAssessmentRequestNestedInput
+  }
+
+  export type AssessmentRequestUncheckedUpdateWithoutAssignedDoctorInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    patientUserId?: StringFieldUpdateOperationsInput | string
+    assessmentTypeId?: StringFieldUpdateOperationsInput | string
+    requestStatus?: StringFieldUpdateOperationsInput | string
+    billingModeSnapshot?: NullableStringFieldUpdateOperationsInput | string | null
     paymentRequirement?: StringFieldUpdateOperationsInput | string
     paymentSatisfied?: BoolFieldUpdateOperationsInput | boolean
     activePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
     purpose?: NullableStringFieldUpdateOperationsInput | string | null
+    adminNote?: NullableStringFieldUpdateOperationsInput | string | null
+    requestedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+    payments?: PaymentUncheckedUpdateManyWithoutAssessmentRequestNestedInput
+    examSession?: ExamSessionUncheckedUpdateOneWithoutAssessmentRequestNestedInput
+  }
+
+  export type AssessmentRequestUncheckedUpdateManyWithoutAssignedDoctorInput = {
+    id?: StringFieldUpdateOperationsInput | string
+    patientUserId?: StringFieldUpdateOperationsInput | string
+    assessmentTypeId?: StringFieldUpdateOperationsInput | string
+    requestStatus?: StringFieldUpdateOperationsInput | string
+    billingModeSnapshot?: NullableStringFieldUpdateOperationsInput | string | null
+    paymentRequirement?: StringFieldUpdateOperationsInput | string
+    paymentSatisfied?: BoolFieldUpdateOperationsInput | boolean
+    activePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    purpose?: NullableStringFieldUpdateOperationsInput | string | null
+    adminNote?: NullableStringFieldUpdateOperationsInput | string | null
     requestedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -56039,7 +56717,7 @@ export namespace Prisma {
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assessmentRequest?: AssessmentRequestUpdateOneRequiredWithoutExamSessionNestedInput
-    doctor?: UserUpdateOneRequiredWithoutAssignedSessionsNestedInput
+    doctor?: UserUpdateOneWithoutAssignedSessionsNestedInput
     instrumentVersion?: InstrumentVersionUpdateOneRequiredWithoutExamSessionsNestedInput
     questionBankVersion?: QuestionBankVersionUpdateOneRequiredWithoutExamSessionsNestedInput
     scoringConfigVersion?: ScoringConfigVersionUpdateOneRequiredWithoutExamSessionsNestedInput
@@ -56052,7 +56730,7 @@ export namespace Prisma {
   export type ExamSessionUncheckedUpdateWithoutPatientInput = {
     id?: StringFieldUpdateOperationsInput | string
     assessmentRequestId?: StringFieldUpdateOperationsInput | string
-    doctorUserId?: StringFieldUpdateOperationsInput | string
+    doctorUserId?: NullableStringFieldUpdateOperationsInput | string | null
     instrumentVersionId?: StringFieldUpdateOperationsInput | string
     questionBankVersionId?: StringFieldUpdateOperationsInput | string
     scoringConfigVersionId?: StringFieldUpdateOperationsInput | string
@@ -56073,7 +56751,7 @@ export namespace Prisma {
   export type ExamSessionUncheckedUpdateManyWithoutPatientInput = {
     id?: StringFieldUpdateOperationsInput | string
     assessmentRequestId?: StringFieldUpdateOperationsInput | string
-    doctorUserId?: StringFieldUpdateOperationsInput | string
+    doctorUserId?: NullableStringFieldUpdateOperationsInput | string | null
     instrumentVersionId?: StringFieldUpdateOperationsInput | string
     questionBankVersionId?: StringFieldUpdateOperationsInput | string
     scoringConfigVersionId?: StringFieldUpdateOperationsInput | string
@@ -56197,18 +56875,24 @@ export namespace Prisma {
   export type AppSettingsUpdateWithoutUpdatedByInput = {
     id?: StringFieldUpdateOperationsInput | string
     billingMode?: StringFieldUpdateOperationsInput | string
+    defaultCurrency?: StringFieldUpdateOperationsInput | string
+    defaultAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type AppSettingsUncheckedUpdateWithoutUpdatedByInput = {
     id?: StringFieldUpdateOperationsInput | string
     billingMode?: StringFieldUpdateOperationsInput | string
+    defaultCurrency?: StringFieldUpdateOperationsInput | string
+    defaultAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type AppSettingsUncheckedUpdateManyWithoutUpdatedByInput = {
     id?: StringFieldUpdateOperationsInput | string
     billingMode?: StringFieldUpdateOperationsInput | string
+    defaultCurrency?: StringFieldUpdateOperationsInput | string
+    defaultAmount?: NullableDecimalFieldUpdateOperationsInput | Decimal | DecimalJsLike | number | string | null
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -56252,10 +56936,13 @@ export namespace Prisma {
     id?: string
     patientUserId: string
     requestStatus?: string
+    billingModeSnapshot?: string | null
     paymentRequirement?: string
     paymentSatisfied?: boolean
     activePaymentId?: string | null
+    doctorUserId?: string | null
     purpose?: string | null
+    adminNote?: string | null
     requestedAt?: Date | string
     createdAt?: Date | string
     updatedAt?: Date | string
@@ -56294,13 +56981,16 @@ export namespace Prisma {
   export type AssessmentRequestUpdateWithoutAssessmentTypeInput = {
     id?: StringFieldUpdateOperationsInput | string
     requestStatus?: StringFieldUpdateOperationsInput | string
+    billingModeSnapshot?: NullableStringFieldUpdateOperationsInput | string | null
     paymentRequirement?: StringFieldUpdateOperationsInput | string
     paymentSatisfied?: BoolFieldUpdateOperationsInput | boolean
     purpose?: NullableStringFieldUpdateOperationsInput | string | null
+    adminNote?: NullableStringFieldUpdateOperationsInput | string | null
     requestedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     patient?: UserUpdateOneRequiredWithoutAssessmentRequestsNestedInput
+    assignedDoctor?: UserUpdateOneWithoutAssignedRequestsNestedInput
     activePayment?: PaymentUpdateOneWithoutActiveForRequestNestedInput
     payments?: PaymentUpdateManyWithoutAssessmentRequestNestedInput
     examSession?: ExamSessionUpdateOneWithoutAssessmentRequestNestedInput
@@ -56310,10 +57000,13 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     patientUserId?: StringFieldUpdateOperationsInput | string
     requestStatus?: StringFieldUpdateOperationsInput | string
+    billingModeSnapshot?: NullableStringFieldUpdateOperationsInput | string | null
     paymentRequirement?: StringFieldUpdateOperationsInput | string
     paymentSatisfied?: BoolFieldUpdateOperationsInput | boolean
     activePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    doctorUserId?: NullableStringFieldUpdateOperationsInput | string | null
     purpose?: NullableStringFieldUpdateOperationsInput | string | null
+    adminNote?: NullableStringFieldUpdateOperationsInput | string | null
     requestedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -56325,10 +57018,13 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     patientUserId?: StringFieldUpdateOperationsInput | string
     requestStatus?: StringFieldUpdateOperationsInput | string
+    billingModeSnapshot?: NullableStringFieldUpdateOperationsInput | string | null
     paymentRequirement?: StringFieldUpdateOperationsInput | string
     paymentSatisfied?: BoolFieldUpdateOperationsInput | boolean
     activePaymentId?: NullableStringFieldUpdateOperationsInput | string | null
+    doctorUserId?: NullableStringFieldUpdateOperationsInput | string | null
     purpose?: NullableStringFieldUpdateOperationsInput | string | null
+    adminNote?: NullableStringFieldUpdateOperationsInput | string | null
     requestedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
@@ -56356,7 +57052,7 @@ export namespace Prisma {
     id?: string
     assessmentRequestId: string
     patientUserId: string
-    doctorUserId: string
+    doctorUserId?: string | null
     questionBankVersionId: string
     scoringConfigVersionId: string
     sessionStatus?: string
@@ -56449,7 +57145,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assessmentRequest?: AssessmentRequestUpdateOneRequiredWithoutExamSessionNestedInput
     patient?: UserUpdateOneRequiredWithoutPatientSessionsNestedInput
-    doctor?: UserUpdateOneRequiredWithoutAssignedSessionsNestedInput
+    doctor?: UserUpdateOneWithoutAssignedSessionsNestedInput
     questionBankVersion?: QuestionBankVersionUpdateOneRequiredWithoutExamSessionsNestedInput
     scoringConfigVersion?: ScoringConfigVersionUpdateOneRequiredWithoutExamSessionsNestedInput
     answers?: SessionAnswerUpdateManyWithoutExamSessionNestedInput
@@ -56462,7 +57158,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     assessmentRequestId?: StringFieldUpdateOperationsInput | string
     patientUserId?: StringFieldUpdateOperationsInput | string
-    doctorUserId?: StringFieldUpdateOperationsInput | string
+    doctorUserId?: NullableStringFieldUpdateOperationsInput | string | null
     questionBankVersionId?: StringFieldUpdateOperationsInput | string
     scoringConfigVersionId?: StringFieldUpdateOperationsInput | string
     sessionStatus?: StringFieldUpdateOperationsInput | string
@@ -56483,7 +57179,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     assessmentRequestId?: StringFieldUpdateOperationsInput | string
     patientUserId?: StringFieldUpdateOperationsInput | string
-    doctorUserId?: StringFieldUpdateOperationsInput | string
+    doctorUserId?: NullableStringFieldUpdateOperationsInput | string | null
     questionBankVersionId?: StringFieldUpdateOperationsInput | string
     scoringConfigVersionId?: StringFieldUpdateOperationsInput | string
     sessionStatus?: StringFieldUpdateOperationsInput | string
@@ -56507,7 +57203,7 @@ export namespace Prisma {
     id?: string
     assessmentRequestId: string
     patientUserId: string
-    doctorUserId: string
+    doctorUserId?: string | null
     instrumentVersionId: string
     scoringConfigVersionId: string
     sessionStatus?: string
@@ -56555,7 +57251,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assessmentRequest?: AssessmentRequestUpdateOneRequiredWithoutExamSessionNestedInput
     patient?: UserUpdateOneRequiredWithoutPatientSessionsNestedInput
-    doctor?: UserUpdateOneRequiredWithoutAssignedSessionsNestedInput
+    doctor?: UserUpdateOneWithoutAssignedSessionsNestedInput
     instrumentVersion?: InstrumentVersionUpdateOneRequiredWithoutExamSessionsNestedInput
     scoringConfigVersion?: ScoringConfigVersionUpdateOneRequiredWithoutExamSessionsNestedInput
     answers?: SessionAnswerUpdateManyWithoutExamSessionNestedInput
@@ -56568,7 +57264,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     assessmentRequestId?: StringFieldUpdateOperationsInput | string
     patientUserId?: StringFieldUpdateOperationsInput | string
-    doctorUserId?: StringFieldUpdateOperationsInput | string
+    doctorUserId?: NullableStringFieldUpdateOperationsInput | string | null
     instrumentVersionId?: StringFieldUpdateOperationsInput | string
     scoringConfigVersionId?: StringFieldUpdateOperationsInput | string
     sessionStatus?: StringFieldUpdateOperationsInput | string
@@ -56589,7 +57285,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     assessmentRequestId?: StringFieldUpdateOperationsInput | string
     patientUserId?: StringFieldUpdateOperationsInput | string
-    doctorUserId?: StringFieldUpdateOperationsInput | string
+    doctorUserId?: NullableStringFieldUpdateOperationsInput | string | null
     instrumentVersionId?: StringFieldUpdateOperationsInput | string
     scoringConfigVersionId?: StringFieldUpdateOperationsInput | string
     sessionStatus?: StringFieldUpdateOperationsInput | string
@@ -56672,7 +57368,7 @@ export namespace Prisma {
     id?: string
     assessmentRequestId: string
     patientUserId: string
-    doctorUserId: string
+    doctorUserId?: string | null
     instrumentVersionId: string
     questionBankVersionId: string
     sessionStatus?: string
@@ -56793,7 +57489,7 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
     assessmentRequest?: AssessmentRequestUpdateOneRequiredWithoutExamSessionNestedInput
     patient?: UserUpdateOneRequiredWithoutPatientSessionsNestedInput
-    doctor?: UserUpdateOneRequiredWithoutAssignedSessionsNestedInput
+    doctor?: UserUpdateOneWithoutAssignedSessionsNestedInput
     instrumentVersion?: InstrumentVersionUpdateOneRequiredWithoutExamSessionsNestedInput
     questionBankVersion?: QuestionBankVersionUpdateOneRequiredWithoutExamSessionsNestedInput
     answers?: SessionAnswerUpdateManyWithoutExamSessionNestedInput
@@ -56806,7 +57502,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     assessmentRequestId?: StringFieldUpdateOperationsInput | string
     patientUserId?: StringFieldUpdateOperationsInput | string
-    doctorUserId?: StringFieldUpdateOperationsInput | string
+    doctorUserId?: NullableStringFieldUpdateOperationsInput | string | null
     instrumentVersionId?: StringFieldUpdateOperationsInput | string
     questionBankVersionId?: StringFieldUpdateOperationsInput | string
     sessionStatus?: StringFieldUpdateOperationsInput | string
@@ -56827,7 +57523,7 @@ export namespace Prisma {
     id?: StringFieldUpdateOperationsInput | string
     assessmentRequestId?: StringFieldUpdateOperationsInput | string
     patientUserId?: StringFieldUpdateOperationsInput | string
-    doctorUserId?: StringFieldUpdateOperationsInput | string
+    doctorUserId?: NullableStringFieldUpdateOperationsInput | string | null
     instrumentVersionId?: StringFieldUpdateOperationsInput | string
     questionBankVersionId?: StringFieldUpdateOperationsInput | string
     sessionStatus?: StringFieldUpdateOperationsInput | string

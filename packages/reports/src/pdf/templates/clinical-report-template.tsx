@@ -14,6 +14,8 @@ import {
 } from '../primitives.js';
 
 export function createClinicalReportDocument(report: ReportCompositionData): ReactElement {
+  void React;
+
   return (
     <Document title={`Clinical Report ${report.reportId}`}>
       <Page size="A4" style={reportStyles.page}>

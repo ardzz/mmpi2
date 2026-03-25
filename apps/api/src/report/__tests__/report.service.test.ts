@@ -50,7 +50,12 @@ function setupServices() {
   const scoringService = new ScoringService(scoringRepository, requestSessionRepository, profileService);
 
   const reportRepository = new InMemoryReportRepository();
-  const reportService = new ReportService(reportRepository, scoringService);
+  const reportService = new ReportService(
+    reportRepository,
+    requestSessionRepository,
+    profileService,
+    scoringService,
+  );
 
   return {
     profileService,
@@ -61,8 +66,8 @@ function setupServices() {
   };
 }
 
-function createCompletePatientProfile(profileService: ProfileService, userId: string): void {
-  profileService.upsertPatientProfile(userId, {
+async function createCompletePatientProfile(profileService: ProfileService, userId: string): Promise<void> {
+  await profileService.upsertPatientProfile(userId, {
     fullName: 'Patient One',
     governmentId: 'ID-12345',
     dateOfBirth: new Date('1990-05-10'),
@@ -76,33 +81,33 @@ function createCompletePatientProfile(profileService: ProfileService, userId: st
   });
 }
 
-function createDoctorProfile(profileService: ProfileService, userId: string): void {
-  profileService.upsertDoctorProfile(userId, {
+async function createDoctorProfile(profileService: ProfileService, userId: string): Promise<void> {
+  await profileService.upsertDoctorProfile(userId, {
     fullName: `Dr. ${userId.slice(0, 4)}`,
     licenseNumber: `PSY-${userId.slice(0, 4)}`,
     specialty: 'Clinical Psychology',
   });
 }
 
-function createScoredSession(
+async function createScoredSession(
   requestSessionService: RequestSessionService,
   scoringService: ScoringService,
   profileService: ProfileService,
-): string {
-  createCompletePatientProfile(profileService, PATIENT_USER_ID);
-  createDoctorProfile(profileService, DOCTOR_USER_ID);
+): Promise<string> {
+  await createCompletePatientProfile(profileService, PATIENT_USER_ID);
+  await createDoctorProfile(profileService, DOCTOR_USER_ID);
 
-  const request = requestSessionService.createAssessmentRequest(PATIENT_USER_ID, {
+  const request = await requestSessionService.createAssessmentRequest(PATIENT_USER_ID, {
     purpose: 'Report workflow test',
   });
 
-  requestSessionService.assignDoctor(request.id, {
+  await requestSessionService.assignDoctor(request.id, {
     doctorUserId: DOCTOR_USER_ID,
   });
-  requestSessionService.reviewRequest(request.id, {
+  await requestSessionService.reviewRequest(request.id, {
     decision: 'approved',
   });
-  requestSessionService.startSessionForPatient(PATIENT_USER_ID, request.id);
+  await requestSessionService.startSessionForPatient(PATIENT_USER_ID, request.id);
 
   const answerInputs = Array.from({ length: 333 }, (_, index) => ({
     questionNumber: index + 1,
@@ -110,41 +115,41 @@ function createScoredSession(
   }));
 
   for (let index = 0; index < answerInputs.length; index += 60) {
-    requestSessionService.saveAnswersForPatient(PATIENT_USER_ID, request.id, {
+    await requestSessionService.saveAnswersForPatient(PATIENT_USER_ID, request.id, {
       answers: answerInputs.slice(index, index + 60),
     });
   }
 
-  const submitted = requestSessionService.submitSessionForPatient(PATIENT_USER_ID, request.id);
-  const scored = scoringService.runScoringForSubmittedSession(submitted.session.id);
+  const submitted = await requestSessionService.submitSessionForPatient(PATIENT_USER_ID, request.id);
+  const scored = await scoringService.runScoringForSubmittedSession(submitted.session.id);
   expect(scored.resultSet.status).toBe('completed');
 
   return submitted.session.id;
 }
 
 describe('ReportService', () => {
-  it('supports doctor draft -> sign -> publish flow bound to canonical result set', () => {
+  it('supports doctor draft -> sign -> publish flow bound to canonical result set', async () => {
     const { requestSessionService, scoringService, profileService, reportService } = setupServices();
-    const sessionId = createScoredSession(requestSessionService, scoringService, profileService);
+    const sessionId = await createScoredSession(requestSessionService, scoringService, profileService);
 
-    const initialState = reportService.getReportStateForDoctor(sessionId, DOCTOR_USER_ID);
+    const initialState = await reportService.getReportStateForDoctor(sessionId, DOCTOR_USER_ID);
     expect(initialState.report).toBeNull();
 
-    const drafted = reportService.saveDraftForDoctor(sessionId, DOCTOR_USER_ID, {
+    const drafted = await reportService.saveDraftForDoctor(sessionId, DOCTOR_USER_ID, {
       interpretationSummary: 'Initial interpretation draft content for review.',
     });
 
     expect(drafted.report?.reportStatus).toBe('draft');
     expect(drafted.report?.scoreResultSetId).toBe(initialState.resultSet.id);
 
-    const signed = reportService.signReportForDoctor(sessionId, DOCTOR_USER_ID, {
+    const signed = await reportService.signReportForDoctor(sessionId, DOCTOR_USER_ID, {
       signatureStoragePath: 'signatures/doctor-a.png',
     });
 
     expect(signed.report?.reportStatus).toBe('pending_review');
     expect(signed.signature?.storagePath).toBe('signatures/doctor-a.png');
 
-    const published = reportService.publishReportForDoctor(sessionId, DOCTOR_USER_ID, {
+    const published = await reportService.publishReportForDoctor(sessionId, DOCTOR_USER_ID, {
       interpretationSummary: 'Final interpretation summary with clinical context and validated findings.',
       narrative:
         'Patient profile indicates notable response consistency and a clinically reviewable but publishable profile.',
@@ -157,49 +162,49 @@ describe('ReportService', () => {
     expect(published.report?.publishedAt).not.toBeNull();
     expect(published.report?.scoreResultSetId).toBe(initialState.resultSet.id);
 
-    expect(() =>
+    await expect(
       reportService.saveDraftForDoctor(sessionId, DOCTOR_USER_ID, {
         narrative: 'Attempt direct edit on published report',
       }),
-    ).toThrow(ConflictException);
+    ).rejects.toThrow(ConflictException);
   });
 
-  it('rejects publish before sign-off and blocks unassigned doctors from authoring', () => {
+  it('rejects publish before sign-off and blocks unassigned doctors from authoring', async () => {
     const { requestSessionService, scoringService, profileService, reportService } = setupServices();
-    const sessionId = createScoredSession(requestSessionService, scoringService, profileService);
-    createDoctorProfile(profileService, OTHER_DOCTOR_USER_ID);
+    const sessionId = await createScoredSession(requestSessionService, scoringService, profileService);
+    await createDoctorProfile(profileService, OTHER_DOCTOR_USER_ID);
 
-    reportService.saveDraftForDoctor(sessionId, DOCTOR_USER_ID, {
+    await reportService.saveDraftForDoctor(sessionId, DOCTOR_USER_ID, {
       interpretationSummary: 'Draft prepared for illegal publish test.',
       narrative: 'Narrative draft created before sign-off.',
     });
 
-    expect(() =>
+    await expect(
       reportService.publishReportForDoctor(sessionId, DOCTOR_USER_ID, {
         interpretationSummary: 'Publish attempt without sign-off should be rejected by service rules.',
         narrative: 'No explicit signature captured yet.',
       }),
-    ).toThrow(ConflictException);
+    ).rejects.toThrow(ConflictException);
 
-    expect(() => reportService.getReportStateForDoctor(sessionId, OTHER_DOCTOR_USER_ID)).toThrow(
+    await expect(reportService.getReportStateForDoctor(sessionId, OTHER_DOCTOR_USER_ID)).rejects.toThrow(
       ForbiddenException,
     );
   });
 
-  it('creates amendment lineage instead of mutating published records', () => {
+  it('creates amendment lineage instead of mutating published records', async () => {
     const { requestSessionService, scoringService, profileService, reportService, reportRepository } =
       setupServices();
-    const sessionId = createScoredSession(requestSessionService, scoringService, profileService);
+    const sessionId = await createScoredSession(requestSessionService, scoringService, profileService);
 
-    expect(() =>
+    await expect(
       reportService.amendPublishedReportForDoctor(sessionId, DOCTOR_USER_ID, {
         interpretationSummary: 'Invalid amendment attempt',
         narrative: 'No published report exists yet.',
         amendmentReason: 'Needs correction',
       }),
-    ).toThrow(NotFoundException);
+    ).rejects.toThrow(NotFoundException);
 
-    const drafted = reportService.saveDraftForDoctor(sessionId, DOCTOR_USER_ID, {
+    const drafted = await reportService.saveDraftForDoctor(sessionId, DOCTOR_USER_ID, {
       interpretationSummary: 'Publishable draft for amendment scenario.',
       narrative: 'Narrative baseline before publication.',
     });
@@ -207,18 +212,18 @@ describe('ReportService', () => {
     const draftId = drafted.report?.id;
     expect(draftId).toBeTruthy();
 
-    reportService.signReportForDoctor(sessionId, DOCTOR_USER_ID, {
+    await reportService.signReportForDoctor(sessionId, DOCTOR_USER_ID, {
       signatureStoragePath: 'signatures/doctor-a.png',
     });
 
-    const published = reportService.publishReportForDoctor(sessionId, DOCTOR_USER_ID, {
+    const published = await reportService.publishReportForDoctor(sessionId, DOCTOR_USER_ID, {
       interpretationSummary: 'Published summary ready for potential amendment if correction is needed.',
       narrative: 'Published narrative baseline for lineage verification.',
     });
 
     expect(published.report?.reportStatus).toBe('published');
 
-    const amended = reportService.amendPublishedReportForDoctor(sessionId, DOCTOR_USER_ID, {
+    const amended = await reportService.amendPublishedReportForDoctor(sessionId, DOCTOR_USER_ID, {
       interpretationSummary: 'Amended summary reflecting corrected clinical framing and conclusions.',
       narrative: 'Amended narrative with corrected emphasis and clarified risk interpretation.',
       amendmentReason: 'Updated interpretation after secondary chart review.',
@@ -228,8 +233,44 @@ describe('ReportService', () => {
     expect(amended.report?.amendedFromId).toBe(draftId);
     expect(amended.report?.id).not.toBe(draftId);
 
-    const originalReport = reportRepository.findReportById(draftId ?? '');
+    const originalReport = await reportRepository.findReportById(draftId ?? '');
     expect(originalReport?.reportStatus).toBe('amended');
     expect(originalReport?.narrative).toBe('Published narrative baseline for lineage verification.');
+  });
+
+  it('lists published patient documents and enforces ownership on detail reads', async () => {
+    const { requestSessionService, scoringService, profileService, reportService } = setupServices();
+    const sessionId = await createScoredSession(requestSessionService, scoringService, profileService);
+
+    await reportService.saveDraftForDoctor(sessionId, DOCTOR_USER_ID, {
+      interpretationSummary: 'Patient document summary ready for release.',
+      narrative: 'Narrative body for patient-facing document read endpoint.',
+    });
+    await reportService.signReportForDoctor(sessionId, DOCTOR_USER_ID, {
+      signatureStoragePath: 'signatures/patient-docs.png',
+    });
+    const published = await reportService.publishReportForDoctor(sessionId, DOCTOR_USER_ID, {
+      interpretationSummary: 'Published patient-facing interpretation summary.',
+      narrative: 'Published patient-facing narrative body.',
+      supplementalObservations: {
+        conclusion: 'Patient document endpoint verified.',
+      },
+    });
+
+    const reportId = published.report?.id;
+    expect(reportId).toBeTruthy();
+
+    const documentList = await reportService.listPublishedDocumentsForPatient(PATIENT_USER_ID);
+    expect(documentList).toHaveLength(1);
+    expect(documentList[0]?.id).toBe(reportId);
+    expect(documentList[0]?.authorName).toBe('Dr. 2222');
+
+    const detail = await reportService.getPublishedDocumentDetailForPatient(PATIENT_USER_ID, reportId ?? '');
+    expect(detail.id).toBe(reportId);
+    expect(detail.narrative).toContain('Published patient-facing narrative body.');
+
+    await expect(
+      reportService.getPublishedDocumentDetailForPatient('44444444-4444-4444-8444-444444444444', reportId ?? ''),
+    ).rejects.toThrow(ForbiddenException);
   });
 });

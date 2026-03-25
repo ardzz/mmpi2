@@ -124,6 +124,8 @@ exports.Prisma.TransactionIsolationLevel = makeStrictEnum({
 exports.Prisma.AppSettingsScalarFieldEnum = {
   id: 'id',
   billingMode: 'billingMode',
+  defaultCurrency: 'defaultCurrency',
+  defaultAmount: 'defaultAmount',
   updatedByUserId: 'updatedByUserId',
   updatedAt: 'updatedAt'
 };
@@ -265,10 +267,13 @@ exports.Prisma.AssessmentRequestScalarFieldEnum = {
   patientUserId: 'patientUserId',
   assessmentTypeId: 'assessmentTypeId',
   requestStatus: 'requestStatus',
+  billingModeSnapshot: 'billingModeSnapshot',
   paymentRequirement: 'paymentRequirement',
   paymentSatisfied: 'paymentSatisfied',
   activePaymentId: 'activePaymentId',
+  doctorUserId: 'doctorUserId',
   purpose: 'purpose',
+  adminNote: 'adminNote',
   requestedAt: 'requestedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'

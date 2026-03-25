@@ -15,9 +15,19 @@ import {
 import { Test, type TestingModule } from '@nestjs/testing';
 import { describe, expect, it } from 'vitest';
 import { AppModule } from '../../app.module';
+import { InMemoryProfileRepository } from '../../profile/in-memory-profile.repository';
+import { ProfileRepository } from '../../profile/profile.repository';
 import { ProfileService } from '../../profile/profile.service';
+import { InMemoryPaymentRepository } from '../../payment/in-memory-payment.repository';
+import { PaymentRepository } from '../../payment/payment.repository';
+import { InMemoryReportRepository } from '../../report/in-memory-report.repository';
+import { ReportRepository } from '../../report/report.repository';
+import { InMemoryRequestSessionRepository } from '../../request-session/in-memory-request-session.repository';
+import { RequestSessionRepository } from '../../request-session/request-session.repository';
 import { ReportService } from '../../report/report.service';
 import { RequestSessionService } from '../../request-session/request-session.service';
+import { InMemoryScoringRepository } from '../../scoring/in-memory-scoring.repository';
+import { ScoringRepository } from '../../scoring/scoring.repository';
 import { ScoringService } from '../../scoring/scoring.service';
 
 const PATIENT_USER_ID = '11111111-1111-4111-8111-111111111111';
@@ -80,7 +90,18 @@ describe('MMPI-2 integration happy path', () => {
   it('verifies request -> session -> scoring -> publish -> artifact availability', async () => {
     const testingModule: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
-    }).compile();
+    })
+      .overrideProvider(ProfileRepository)
+      .useClass(InMemoryProfileRepository)
+      .overrideProvider(PaymentRepository)
+      .useClass(InMemoryPaymentRepository)
+      .overrideProvider(RequestSessionRepository)
+      .useClass(InMemoryRequestSessionRepository)
+      .overrideProvider(ScoringRepository)
+      .useClass(InMemoryScoringRepository)
+      .overrideProvider(ReportRepository)
+      .useClass(InMemoryReportRepository)
+      .compile();
 
     try {
       const profileService = testingModule.get(ProfileService);
@@ -88,7 +109,7 @@ describe('MMPI-2 integration happy path', () => {
       const scoringService = testingModule.get(ScoringService);
       const reportService = testingModule.get(ReportService);
 
-      profileService.upsertPatientProfile(PATIENT_USER_ID, {
+      await profileService.upsertPatientProfile(PATIENT_USER_ID, {
         fullName: 'Patient One',
         governmentId: 'ID-12345',
         dateOfBirth: new Date('1990-05-10'),
@@ -101,64 +122,64 @@ describe('MMPI-2 integration happy path', () => {
         },
       });
 
-      profileService.upsertDoctorProfile(DOCTOR_USER_ID, {
+      await profileService.upsertDoctorProfile(DOCTOR_USER_ID, {
         fullName: 'Dr. Tester',
         licenseNumber: 'PSY-9001',
         specialty: 'Clinical Psychology',
       });
 
-      const createdRequest = requestSessionService.createAssessmentRequest(PATIENT_USER_ID, {
+      const createdRequest = await requestSessionService.createAssessmentRequest(PATIENT_USER_ID, {
         purpose: 'Integration happy path verification',
       });
       expect(createdRequest.status).toBe(AssessmentRequestStatus.READY_FOR_ADMIN_REVIEW);
       expect(createdRequest.paymentSatisfied).toBe(true);
 
-      const assignedRequest = requestSessionService.assignDoctor(createdRequest.id, {
+      const assignedRequest = await requestSessionService.assignDoctor(createdRequest.id, {
         doctorUserId: DOCTOR_USER_ID,
       });
       expect(assignedRequest.doctorUserId).toBe(DOCTOR_USER_ID);
 
-      const approvedRequest = requestSessionService.reviewRequest(createdRequest.id, {
+      const approvedRequest = await requestSessionService.reviewRequest(createdRequest.id, {
         decision: 'approved',
       });
       expect(approvedRequest.status).toBe(AssessmentRequestStatus.APPROVED);
 
-      const readyState = requestSessionService.getSessionStateForPatient(PATIENT_USER_ID, createdRequest.id);
+      const readyState = await requestSessionService.getSessionStateForPatient(PATIENT_USER_ID, createdRequest.id);
       expect(readyState.session.status).toBe(ExamSessionStatus.READY_TO_START);
 
-      const startedState = requestSessionService.startSessionForPatient(PATIENT_USER_ID, createdRequest.id);
+      const startedState = await requestSessionService.startSessionForPatient(PATIENT_USER_ID, createdRequest.id);
       expect(startedState.session.status).toBe(ExamSessionStatus.IN_PROGRESS);
 
       const answerInputs = createAnswerInputs();
       for (let index = 0; index < answerInputs.length; index += 75) {
-        requestSessionService.saveAnswersForPatient(PATIENT_USER_ID, createdRequest.id, {
+        await requestSessionService.saveAnswersForPatient(PATIENT_USER_ID, createdRequest.id, {
           answers: answerInputs.slice(index, index + 75),
         });
       }
 
-      const submittedState = requestSessionService.submitSessionForPatient(PATIENT_USER_ID, createdRequest.id);
+      const submittedState = await requestSessionService.submitSessionForPatient(PATIENT_USER_ID, createdRequest.id);
       expect(submittedState.session.status).toBe(ExamSessionStatus.SUBMITTED);
       expect(submittedState.progress.answeredCount).toBe(TOTAL_MMPI2_QUESTIONS);
       expect(submittedState.progress.unansweredCount).toBe(0);
 
-      const scoredView = scoringService.runScoringForSubmittedSession(submittedState.session.id);
+      const scoredView = await scoringService.runScoringForSubmittedSession(submittedState.session.id);
       expect(scoredView.resultSet.status).toBe(ScoreResultSetStatus.COMPLETED);
       expect(scoredView.scaleResults.length).toBeGreaterThan(0);
       expect(scoredView.resultSet.examSessionId).toBe(submittedState.session.id);
 
-      const draftedState = reportService.saveDraftForDoctor(submittedState.session.id, DOCTOR_USER_ID, {
+      const draftedState = await reportService.saveDraftForDoctor(submittedState.session.id, DOCTOR_USER_ID, {
         interpretationSummary: 'Integration draft summary before sign-off.',
         narrative: 'Patient completed the full instrument and generated publishable scoring output.',
       });
       expect(draftedState.report?.reportStatus).toBe(ClinicalReportStatus.DRAFT);
 
-      const signedState = reportService.signReportForDoctor(submittedState.session.id, DOCTOR_USER_ID, {
+      const signedState = await reportService.signReportForDoctor(submittedState.session.id, DOCTOR_USER_ID, {
         signatureStoragePath: 'signatures/integration-doctor.png',
       });
       expect(signedState.report?.reportStatus).toBe('pending_review');
       expect(signedState.signature?.storagePath).toBe('signatures/integration-doctor.png');
 
-      const publishedState = reportService.publishReportForDoctor(submittedState.session.id, DOCTOR_USER_ID, {
+      const publishedState = await reportService.publishReportForDoctor(submittedState.session.id, DOCTOR_USER_ID, {
         interpretationSummary: 'Published report for integration verification.',
         narrative:
           'This published report confirms the end-to-end happy path from request creation to scored output.',
@@ -176,8 +197,8 @@ describe('MMPI-2 integration happy path', () => {
         throw new Error('Expected published report to be available.');
       }
 
-      const patientProfile = profileService.getPatientProfileByUserId(PATIENT_USER_ID);
-      const doctorProfile = profileService.getDoctorProfileByUserId(DOCTOR_USER_ID);
+      const patientProfile = await profileService.getPatientProfileByUserId(PATIENT_USER_ID);
+      const doctorProfile = await profileService.getDoctorProfileByUserId(DOCTOR_USER_ID);
       const storageKey = `reports/${publishedReport.id}.pdf`;
 
       const artifactPayload: ReportArtifactJobPayload = ReportArtifactJobPayloadSchema.parse({

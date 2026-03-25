@@ -8,6 +8,7 @@ import {
   Patch,
   Post,
   Put,
+  Query,
   UnauthorizedException,
 } from '@nestjs/common';
 import {
@@ -46,6 +47,33 @@ export class RequestSessionController {
   ) {
     const payload = this.parseCreateAssessmentRequestBody(body);
     return this.service.createAssessmentRequest(this.getCurrentUserIdOrThrow(user), payload);
+  }
+
+  @RequireMinRole(UserRole.DOCTOR)
+  @Get('doctor/cases')
+  getDoctorCaseQueue(
+    @CurrentUser() user: AuthenticatedUserContext | undefined,
+    @Query('q') q?: string,
+  ) {
+    return this.service.getDoctorCaseQueue(this.getCurrentUserIdOrThrow(user), { q });
+  }
+
+  @RequireMinRole(UserRole.ADMIN)
+  @Get('admin/requests')
+  listAdminRequests(@Query('q') q?: string, @Query('status') status?: string) {
+    return this.service.listAdminRequests({ q, status });
+  }
+
+  @RequireMinRole(UserRole.ADMIN)
+  @Get('admin/requests/:requestId')
+  getAdminRequestDetail(@Param('requestId') requestId: string) {
+    return this.service.getAdminRequestDetail(requestId);
+  }
+
+  @RequireMinRole(UserRole.ADMIN)
+  @Get('admin/assignments/:requestId')
+  getAdminAssignmentDetail(@Param('requestId') requestId: string) {
+    return this.service.getAdminAssignmentDetail(requestId);
   }
 
   @RequireMinRole(UserRole.ADMIN)

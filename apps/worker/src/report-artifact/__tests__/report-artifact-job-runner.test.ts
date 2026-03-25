@@ -7,6 +7,7 @@ import { InMemoryArtifactStorage } from '../in-memory-artifact-storage';
 import { InMemoryReportArtifactJobQueue } from '../in-memory-report-artifact-job-queue';
 import { ReportArtifactJobProcessor } from '../report-artifact-job-processor';
 import { ReportArtifactJobRunner } from '../report-artifact-job-runner';
+import { ReportDocumentRegistry } from '../report-document-registry';
 import { ReportArtifactService } from '../report-artifact.service';
 import { ReportPdfRenderer } from '../report-pdf-renderer';
 import { createReportArtifactJobPayload } from './report-artifact-fixtures';
@@ -17,11 +18,21 @@ class FakeReportPdfRenderer extends ReportPdfRenderer {
   }
 }
 
+class NoopReportDocumentRegistry extends ReportDocumentRegistry {
+  async persistGeneratedArtifact(): Promise<void> {
+    return Promise.resolve();
+  }
+}
+
 describe('ReportArtifactService and ReportArtifactJobRunner', () => {
   it('processes queued jobs asynchronously through queue -> processor -> storage', async () => {
     const queue = new InMemoryReportArtifactJobQueue();
     const storage = new InMemoryArtifactStorage();
-    const processor = new ReportArtifactJobProcessor(storage, new FakeReportPdfRenderer());
+    const processor = new ReportArtifactJobProcessor(
+      storage,
+      new FakeReportPdfRenderer(),
+      new NoopReportDocumentRegistry(),
+    );
     const runner = new ReportArtifactJobRunner(queue, processor);
     const service = new ReportArtifactService(queue, runner);
 
