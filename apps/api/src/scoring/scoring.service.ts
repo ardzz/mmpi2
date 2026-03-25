@@ -96,9 +96,9 @@ export class ScoringService {
     private readonly profileService: ProfileService,
   ) {}
 
-  runScoringForSubmittedSession(sessionId: string): ScoredSessionView {
-    const session = this.mustFindSession(sessionId);
-    const frozenVersions = this.mustFindFrozenVersions(session.id);
+  async runScoringForSubmittedSession(sessionId: string): Promise<ScoredSessionView> {
+    const session = await this.mustFindSession(sessionId);
+    const frozenVersions = await this.mustFindFrozenVersions(session.id);
 
     if (session.status !== ExamSessionStatus.SUBMITTED) {
       throw new ConflictException(`Scoring can only run for submitted sessions. Current status: '${session.status}'.`);
@@ -106,9 +106,9 @@ export class ScoringService {
 
     this.assertFrozenVersionsMatchScoringCatalog(session, frozenVersions);
 
-    const patientProfile = this.profileService.getPatientProfileByUserId(session.patientUserId);
-    const scoringSession = this.transitionSession(session, ExamSessionStatus.SCORING);
-    this.appendSessionEvent(scoringSession.id, 'scoring_started', {
+    const patientProfile = await this.profileService.getPatientProfileByUserId(session.patientUserId);
+    const scoringSession = await this.transitionSession(session, ExamSessionStatus.SCORING);
+    await this.appendSessionEvent(scoringSession.id, 'scoring_started', {
       requestId: scoringSession.assessmentRequestId,
       scoringConfigVersionId: frozenVersions.scoringConfigVersionId,
     });
@@ -116,12 +116,12 @@ export class ScoringService {
     try {
       const scoreOutput = scoreSession({
         sessionId: scoringSession.id,
-        answers: this.toScoringAnswers(this.requestSessionRepository.listAnswersBySessionId(scoringSession.id)),
+        answers: this.toScoringAnswers(await this.requestSessionRepository.listAnswersBySessionId(scoringSession.id)),
         config: MMPI2_SCORING_CONFIG,
         gender: patientProfile.gender,
       });
 
-      const snapshot = this.persistCompletedResultSet(
+      const snapshot = await this.persistCompletedResultSet(
         scoringSession,
         frozenVersions,
         patientProfile.gender,
@@ -134,8 +134,8 @@ export class ScoringService {
           ? ExamSessionStatus.SCORED
           : ExamSessionStatus.NEEDS_CLINICAL_REVIEW;
 
-      const finalizedSession = this.transitionSession(scoringSession, finalStatus);
-      this.appendSessionEvent(finalizedSession.id, DomainEventType.SCORING_COMPLETED, {
+      const finalizedSession = await this.transitionSession(scoringSession, finalStatus);
+      await this.appendSessionEvent(finalizedSession.id, DomainEventType.SCORING_COMPLETED, {
         requestId: finalizedSession.assessmentRequestId,
         scoreResultSetId: snapshot.resultSet.id,
         scoreOutcome: scoreOutput.outcome,
@@ -144,10 +144,10 @@ export class ScoringService {
 
       return this.toScoredSessionView(finalizedSession, frozenVersions, snapshot);
     } catch {
-      const failedSnapshot = this.persistFailedResultSet(scoringSession, frozenVersions, patientProfile.gender);
-      const finalizedSession = this.transitionSession(scoringSession, ExamSessionStatus.NEEDS_CLINICAL_REVIEW);
+      const failedSnapshot = await this.persistFailedResultSet(scoringSession, frozenVersions, patientProfile.gender);
+      const finalizedSession = await this.transitionSession(scoringSession, ExamSessionStatus.NEEDS_CLINICAL_REVIEW);
 
-      this.appendSessionEvent(finalizedSession.id, 'scoring_failed', {
+      await this.appendSessionEvent(finalizedSession.id, 'scoring_failed', {
         requestId: finalizedSession.assessmentRequestId,
         scoreResultSetId: failedSnapshot.resultSet.id,
       });
@@ -158,15 +158,15 @@ export class ScoringService {
     }
   }
 
-  getLatestScoreForDoctor(sessionId: string, doctorUserId: string): ScoredSessionView {
-    const session = this.mustFindSession(sessionId);
+  async getLatestScoreForDoctor(sessionId: string, doctorUserId: string): Promise<ScoredSessionView> {
+    const session = await this.mustFindSession(sessionId);
 
     if (session.doctorUserId !== doctorUserId) {
       throw new ForbiddenException(`Doctor '${doctorUserId}' is not assigned to session '${sessionId}'.`);
     }
 
-    const frozenVersions = this.mustFindFrozenVersions(session.id);
-    const latestSnapshot = this.scoringRepository.findLatestResultSetBySessionId(session.id);
+    const frozenVersions = await this.mustFindFrozenVersions(session.id);
+    const latestSnapshot = await this.scoringRepository.findLatestResultSetBySessionId(session.id);
 
     if (latestSnapshot === null) {
       throw new NotFoundException(`Scoring result set for session '${session.id}' was not found.`);
@@ -175,13 +175,13 @@ export class ScoringService {
     return this.toScoredSessionView(session, frozenVersions, latestSnapshot);
   }
 
-  private persistCompletedResultSet(
+  private async persistCompletedResultSet(
     session: ExamSession,
     frozenVersions: FrozenVersionRefs,
     patientGender: ScoreResultSet['patientGender'],
     outcome: ScoringOutcome,
     scoringOutput: ReturnType<typeof scoreSession>,
-  ): ScoringResultSetSnapshot {
+  ): Promise<ScoringResultSetSnapshot> {
     const resultSetId = randomUUID();
 
     const resultSet = ScoreResultSetSchema.parse({
@@ -207,11 +207,11 @@ export class ScoringService {
     });
   }
 
-  private persistFailedResultSet(
+  private async persistFailedResultSet(
     session: ExamSession,
     frozenVersions: FrozenVersionRefs,
     patientGender: ScoreResultSet['patientGender'],
-  ): ScoringResultSetSnapshot {
+  ): Promise<ScoringResultSetSnapshot> {
     const resultSetId = randomUUID();
 
     return this.scoringRepository.createResultSetSnapshot({
@@ -383,8 +383,8 @@ export class ScoringService {
     }
   }
 
-  private mustFindSession(sessionId: string): ExamSession {
-    const session = this.requestSessionRepository.findSessionById(sessionId);
+  private async mustFindSession(sessionId: string): Promise<ExamSession> {
+    const session = await this.requestSessionRepository.findSessionById(sessionId);
     if (session === null) {
       throw new NotFoundException(`Exam session '${sessionId}' was not found.`);
     }
@@ -392,8 +392,8 @@ export class ScoringService {
     return session;
   }
 
-  private mustFindFrozenVersions(sessionId: string): FrozenVersionRefs {
-    const frozenVersions = this.requestSessionRepository.getFrozenVersionsForSession(sessionId);
+  private async mustFindFrozenVersions(sessionId: string): Promise<FrozenVersionRefs> {
+    const frozenVersions = await this.requestSessionRepository.getFrozenVersionsForSession(sessionId);
     if (frozenVersions === null) {
       throw new NotFoundException(`Frozen version refs for session '${sessionId}' were not found.`);
     }
@@ -401,7 +401,10 @@ export class ScoringService {
     return frozenVersions;
   }
 
-  private transitionSession(session: ExamSession, targetStatus: ExamSession['status']): ExamSession {
+  private async transitionSession(
+    session: ExamSession,
+    targetStatus: ExamSession['status'],
+  ): Promise<ExamSession> {
     if (!canTransitionSession(session.status, targetStatus)) {
       throw new ConflictException(
         `Cannot transition session from '${session.status}' to '${targetStatus}'.`,
@@ -415,12 +418,12 @@ export class ScoringService {
     });
   }
 
-  private appendSessionEvent(
+  private async appendSessionEvent(
     sessionId: string,
     eventType: string,
     payload: Record<string, unknown>,
-  ): void {
-    this.requestSessionRepository.appendSessionEvent({
+  ): Promise<void> {
+    await this.requestSessionRepository.appendSessionEvent({
       id: randomUUID(),
       examSessionId: sessionId,
       eventType,

@@ -14,6 +14,7 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
+    "@mmpi2/db": "workspace:*",
     "@mmpi2/reports": "workspace:*",
     "@nestjs/common": "^10.4.15",
     "@nestjs/core": "^10.4.15",

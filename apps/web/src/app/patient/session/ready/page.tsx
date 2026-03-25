@@ -1,7 +1,31 @@
 import Link from 'next/link';
 import { PlayCircle, Clock, Shield, AlertTriangle, ArrowLeft } from 'lucide-react';
+import { fetchApi } from '../../../../lib/api-client';
+import { redirect } from 'next/navigation';
 
-export default function ReadyToStartPage() {
+export default async function ReadyToStartPage({ searchParams }: { searchParams: Promise<{ requestId?: string }> }) {
+  const resolvedParams = await searchParams;
+  const requestId = resolvedParams.requestId;
+
+  if (!requestId) {
+    redirect('/patient');
+  }
+
+  async function startSession() {
+    'use server';
+    
+    try {
+      await fetchApi(`/workflow/requests/${requestId}/session/start`, {
+        method: 'POST',
+      });
+    } catch (error) {
+      console.error('Failed to start session:', error);
+      // Even if it fails (maybe already started), we try to proceed to active
+    }
+    
+    redirect(`/patient/session/active?requestId=${requestId}`);
+  }
+
   return (
     <div className="max-w-3xl mx-auto space-y-8">
       <div className="flex items-center gap-4">
@@ -61,20 +85,20 @@ export default function ReadyToStartPage() {
             <li>Try to give the truest picture of yourself possible. Do not try to answer the way you think others would want you to answer.</li>
           </ul>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-end">
+          <form action={startSession} className="flex flex-col sm:flex-row gap-4 justify-end">
             <Link 
               href="/patient"
               className="inline-flex justify-center rounded-[var(--radius-md)] bg-[var(--color-surface)] border border-[var(--color-outline-variant)]/15 px-6 py-3 text-sm font-semibold text-[var(--color-on-surface)] hover:bg-[var(--color-surface-low)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] transition-all"
             >
               Start Later
             </Link>
-            <Link
-              href="/patient/session/active"
+            <button
+              type="submit"
               className="inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-primary-container)] px-8 py-3 text-sm font-semibold text-white shadow-[var(--shadow-ambient)] hover:from-[var(--color-primary-container)] hover:to-[var(--color-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] transition-all"
             >
               Begin Assessment
-            </Link>
-          </div>
+            </button>
+          </form>
         </div>
       </div>
     </div>

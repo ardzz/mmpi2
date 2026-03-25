@@ -1,12 +1,24 @@
 import Link from 'next/link';
 import { FileText, ArrowRight, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { fetchApi } from '../../lib/api-client';
+import type { PatientProfile } from '@mmpi2/contracts';
 
-export default function PatientDashboardPage() {
+export default async function PatientDashboardPage() {
+  let profile: PatientProfile | null = null;
+  try {
+    profile = await fetchApi<PatientProfile>('/profiles/patient/me');
+  } catch (error) {
+    console.error('Failed to load patient profile:', error);
+  }
+
+  const firstName = profile?.fullName?.split(' ')[0] || 'Patient';
+  const isComplete = profile?.isProfileComplete ?? false;
+
   return (
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-display font-bold text-[var(--color-primary)]">
-          Welcome, Alex
+          Welcome, {firstName}
         </h1>
         <p className="mt-2 text-[var(--color-on-surface-variant)] text-lg">
           Manage your clinical assessments and view your results.
@@ -23,21 +35,32 @@ export default function PatientDashboardPage() {
               </div>
               <div>
                 <h3 className="font-display font-semibold text-xl text-[var(--color-primary)] mb-1">
-                  Ready for Assessment
+                  {isComplete ? 'Ready for Assessment' : 'Profile Incomplete'}
                 </h3>
                 <p className="text-[var(--color-on-surface-variant)] mb-4 max-w-md">
-                  Your profile is complete. You can now request a new MMPI-2 assessment session.
+                  {isComplete 
+                    ? 'Your profile is complete. You can now request a new MMPI-2 assessment session.'
+                    : 'Please complete your clinical profile before requesting an assessment.'}
                 </p>
               </div>
             </div>
           </div>
           <div className="pl-16">
-            <Link 
-              href="/patient/requests/new"
-              className="inline-flex items-center gap-2 rounded-[var(--radius-md)] bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-primary-container)] px-4 py-2.5 text-sm font-semibold text-white shadow-[var(--shadow-ambient)] hover:from-[var(--color-primary-container)] hover:to-[var(--color-primary)] transition-all"
-            >
-              Request Assessment <ArrowRight className="w-4 h-4" />
-            </Link>
+            {isComplete ? (
+              <Link 
+                href="/patient/requests/new"
+                className="inline-flex items-center gap-2 rounded-[var(--radius-md)] bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-primary-container)] px-4 py-2.5 text-sm font-semibold text-white shadow-[var(--shadow-ambient)] hover:from-[var(--color-primary-container)] hover:to-[var(--color-primary)] transition-all"
+              >
+                Request Assessment <ArrowRight className="w-4 h-4" />
+              </Link>
+            ) : (
+              <Link 
+                href="/patient/profile"
+                className="inline-flex items-center gap-2 rounded-[var(--radius-md)] bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-primary-container)] px-4 py-2.5 text-sm font-semibold text-white shadow-[var(--shadow-ambient)] hover:from-[var(--color-primary-container)] hover:to-[var(--color-primary)] transition-all"
+              >
+                Complete Profile <ArrowRight className="w-4 h-4" />
+              </Link>
+            )}
           </div>
         </div>
 

@@ -1,38 +1,109 @@
 "use client";
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { PauseCircle, ArrowLeft, ArrowRight, ShieldCheck } from 'lucide-react';
+import { useEffect, useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { PauseCircle, ArrowLeft, ShieldCheck, Loader2 } from 'lucide-react';
+import { fetchApi } from '../../../../lib/api-client';
+import { AnswerState } from '@mmpi2/contracts';
 
-// Mock data to simulate questions
-const MOCK_QUESTIONS = [
-  "I like mechanics magazines.",
-  "I have a good appetite.",
-  "I wake up fresh and rested most mornings.",
-  "I think I would like the work of a librarian.",
-  "I am easily awakened by noise."
-];
+const MOCK_QUESTIONS = Array.from({ length: 50 }).map((_, i) => `This is statement number ${i + 1}.`);
 
-export default function ActiveSessionPage() {
+interface SessionAnswerResponse {
+  questionNumber: number;
+  answerState: (typeof AnswerState)[keyof typeof AnswerState];
+}
+
+interface SessionStateResponse {
+  answers: SessionAnswerResponse[];
+}
+
+function ActiveSessionInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const requestId = searchParams.get('requestId');
+  
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, boolean | null>>({});
-  const totalQuestions = MOCK_QUESTIONS.length; // For mockup, using length of array. Normally 567.
+  const [loading, setLoading] = useState(true);
+  const totalQuestions = MOCK_QUESTIONS.length;
+
+  useEffect(() => {
+    if (!requestId) {
+      router.push('/patient');
+      return;
+    }
+
+    fetchApi<SessionStateResponse>(`/workflow/requests/${requestId}/session`)
+      .then(data => {
+        if (data?.answers) {
+          const loadedAnswers: Record<number, boolean> = {};
+          let maxAnsweredIndex = -1;
+          for (const ans of data.answers) {
+            if (ans.answerState === AnswerState.UNANSWERED) {
+              continue;
+            }
+
+            loadedAnswers[ans.questionNumber - 1] = ans.answerState === AnswerState.TRUE;
+            if (ans.questionNumber - 1 > maxAnsweredIndex) {
+              maxAnsweredIndex = ans.questionNumber - 1;
+            }
+          }
+          setAnswers(loadedAnswers);
+          setCurrentIndex(Math.min(maxAnsweredIndex + 1, totalQuestions - 1));
+        }
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Failed to load session:', err);
+        setLoading(false);
+      });
+  }, [requestId, router, totalQuestions]);
 
   const progressPercentage = Math.round((Object.keys(answers).length / totalQuestions) * 100);
 
-  const handleAnswer = (value: boolean) => {
-    setAnswers(prev => ({ ...prev, [currentIndex]: value }));
+  const saveAnswersBatch = async (newAnswers: Record<number, boolean | null>) => {
+    if (!requestId) return;
     
-    // Auto-advance after a short delay for smoothness
+    const batch = Object.entries(newAnswers).map(([idx, val]) => ({
+      questionNumber: Number.parseInt(idx, 10) + 1,
+      answer: val ? 'true' : 'false',
+    }));
+
+    try {
+      await fetchApi(`/workflow/requests/${requestId}/session/answers`, {
+        method: 'PUT',
+        body: JSON.stringify({ answers: batch }),
+      });
+    } catch (error) {
+      console.error('Failed to save answers:', error);
+    }
+  };
+
+  const handleAnswer = (value: boolean) => {
+    const newAnswers = { ...answers, [currentIndex]: value };
+    setAnswers(newAnswers);
+    saveAnswersBatch({ [currentIndex]: value });
+    
     setTimeout(() => {
       if (currentIndex < totalQuestions - 1) {
         setCurrentIndex(prev => prev + 1);
       } else {
-        // Submit and redirect
-        router.push('/patient/session/submitted');
+        submitSession();
       }
     }, 400);
+  };
+
+  const submitSession = async () => {
+    if (!requestId) return;
+    try {
+      await fetchApi(`/workflow/requests/${requestId}/session/submit`, {
+        method: 'POST',
+      });
+      router.push(`/patient/session/submitted?requestId=${requestId}`);
+    } catch (error) {
+      console.error('Failed to submit session:', error);
+      router.push(`/patient/session/submitted?requestId=${requestId}`);
+    }
   };
 
   const handlePrevious = () => {
@@ -41,12 +112,19 @@ export default function ActiveSessionPage() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex h-[60vh] items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-[var(--color-primary)]" />
+      </div>
+    );
+  }
+
   const currentAnswer = answers[currentIndex];
   const questionText = MOCK_QUESTIONS[currentIndex];
 
   return (
     <div className="max-w-4xl mx-auto flex flex-col h-full min-h-[calc(100vh-8rem)]">
-      {/* Top Header / Progress */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div className="flex items-center gap-3">
           <ShieldCheck className="w-5 h-5 text-[var(--color-primary)] opacity-70" />
@@ -65,7 +143,6 @@ export default function ActiveSessionPage() {
         </button>
       </div>
 
-      {/* Progress Bar Container */}
       <div className="bg-[var(--color-surface-lowest)] rounded-[var(--radius-lg)] p-6 shadow-[var(--shadow-ambient)] mb-6 flex flex-col gap-4">
         <div className="flex justify-between text-sm font-medium text-[var(--color-on-surface)]">
           <span>Statement {currentIndex + 1} of {totalQuestions}</span>
@@ -79,9 +156,7 @@ export default function ActiveSessionPage() {
         </div>
       </div>
 
-      {/* Main Question Area */}
       <div className="flex-1 bg-[var(--color-surface-lowest)] rounded-[var(--radius-lg)] shadow-[var(--shadow-ambient)] p-8 md:p-16 flex flex-col justify-center items-center text-center relative overflow-hidden">
-        
         <div className="max-w-2xl w-full mx-auto flex-1 flex flex-col justify-center">
           <h2 className="text-2xl md:text-3xl font-display font-medium text-[var(--color-on-surface)] leading-relaxed mb-12 min-h-[6rem] flex items-center justify-center">
             "{questionText}"
@@ -118,7 +193,6 @@ export default function ActiveSessionPage() {
         </div>
       </div>
 
-      {/* Footer Controls */}
       <div className="mt-6 flex items-center justify-between">
         <button
           type="button"
@@ -135,30 +209,25 @@ export default function ActiveSessionPage() {
           <ArrowLeft className="w-4 h-4" />
           Previous
         </button>
-        
-        {/* Next button typically hidden in T/F as it auto-advances, but good for review */}
-        <button
-          type="button"
-          onClick={() => {
-            if (currentAnswer !== undefined && currentIndex < totalQuestions - 1) {
-              setCurrentIndex(prev => prev + 1);
-            } else if (currentAnswer !== undefined && currentIndex === totalQuestions - 1) {
-              router.push('/patient/session/submitted');
-            }
-          }}
-          disabled={currentAnswer === undefined}
-          className={`
-            inline-flex items-center gap-2 px-5 py-3 rounded-[var(--radius-md)] font-medium text-sm transition-all
-            ${currentAnswer === undefined
-              ? 'opacity-50 cursor-not-allowed text-[var(--color-on-surface-variant)]'
-              : 'text-[var(--color-primary)] hover:bg-[var(--color-surface-lowest)]'
-            }
-          `}
-        >
-          {currentIndex === totalQuestions - 1 ? 'Submit' : 'Next'}
-          <ArrowRight className="w-4 h-4" />
-        </button>
+
+        <div className="text-sm text-[var(--color-on-surface-variant)]">
+          {currentIndex + 1} / {totalQuestions}
+        </div>
       </div>
     </div>
+  );
+}
+
+export default function ActiveSessionPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex h-[60vh] items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin text-[var(--color-primary)]" />
+        </div>
+      }
+    >
+      <ActiveSessionInner />
+    </Suspense>
   );
 }

@@ -15,15 +15,23 @@ import {
   it,
 } from 'vitest';
 import { AppModule } from '../../app.module';
+import { InMemoryProfileRepository } from '../../profile/in-memory-profile.repository';
+import { ProfileRepository } from '../../profile/profile.repository';
 import { PaymentService } from '../../payment/payment.service';
+import { InMemoryPaymentRepository } from '../../payment/in-memory-payment.repository';
+import { PaymentRepository } from '../../payment/payment.repository';
 import { ProfileService } from '../../profile/profile.service';
+import { InMemoryReportRepository } from '../../report/in-memory-report.repository';
 import { ReportRepository } from '../../report/report.repository';
 import { ReportService } from '../../report/report.service';
+import { InMemoryRequestSessionRepository } from '../../request-session/in-memory-request-session.repository';
 import {
   RequestSessionRepository,
   type FrozenVersionRefs,
 } from '../../request-session/request-session.repository';
 import { RequestSessionService } from '../../request-session/request-session.service';
+import { InMemoryScoringRepository } from '../../scoring/in-memory-scoring.repository';
+import { ScoringRepository } from '../../scoring/scoring.repository';
 import { ScoringService } from '../../scoring/scoring.service';
 
 const PATIENT_USER_ID = '11111111-1111-4111-8111-111111111111';
@@ -44,7 +52,18 @@ async function withIntegrationContext(
 ): Promise<void> {
   const testingModule: TestingModule = await Test.createTestingModule({
     imports: [AppModule],
-  }).compile();
+  })
+    .overrideProvider(ProfileRepository)
+    .useClass(InMemoryProfileRepository)
+    .overrideProvider(PaymentRepository)
+    .useClass(InMemoryPaymentRepository)
+    .overrideProvider(RequestSessionRepository)
+    .useClass(InMemoryRequestSessionRepository)
+    .overrideProvider(ScoringRepository)
+    .useClass(InMemoryScoringRepository)
+    .overrideProvider(ReportRepository)
+    .useClass(InMemoryReportRepository)
+    .compile();
 
   try {
     await run({
@@ -63,8 +82,8 @@ async function withIntegrationContext(
   }
 }
 
-function seedProfiles(profileService: ProfileService): void {
-  profileService.upsertPatientProfile(PATIENT_USER_ID, {
+async function seedProfiles(profileService: ProfileService): Promise<void> {
+  await profileService.upsertPatientProfile(PATIENT_USER_ID, {
     fullName: 'Patient One',
     governmentId: 'ID-12345',
     dateOfBirth: new Date('1990-05-10'),
@@ -77,7 +96,7 @@ function seedProfiles(profileService: ProfileService): void {
     },
   });
 
-  profileService.upsertDoctorProfile(DOCTOR_USER_ID, {
+  await profileService.upsertDoctorProfile(DOCTOR_USER_ID, {
     fullName: 'Dr. Tester',
     licenseNumber: 'PSY-9001',
     specialty: 'Clinical Psychology',
@@ -93,16 +112,16 @@ function createAnswerInputs(
   }));
 }
 
-function createApprovedRequest(context: IntegrationContext): { requestId: string } {
-  const createdRequest = context.requestSessionService.createAssessmentRequest(PATIENT_USER_ID, {
+async function createApprovedRequest(context: IntegrationContext): Promise<{ requestId: string }> {
+  const createdRequest = await context.requestSessionService.createAssessmentRequest(PATIENT_USER_ID, {
     purpose: 'Negative-path hardening request',
   });
 
-  context.requestSessionService.assignDoctor(createdRequest.id, {
+  await context.requestSessionService.assignDoctor(createdRequest.id, {
     doctorUserId: DOCTOR_USER_ID,
   });
 
-  context.requestSessionService.reviewRequest(createdRequest.id, {
+  await context.requestSessionService.reviewRequest(createdRequest.id, {
     decision: 'approved',
   });
 
@@ -111,23 +130,23 @@ function createApprovedRequest(context: IntegrationContext): { requestId: string
   };
 }
 
-function createSubmittedSession(context: IntegrationContext): {
+async function createSubmittedSession(context: IntegrationContext): Promise<{
   requestId: string;
   sessionId: string;
   frozenVersions: FrozenVersionRefs;
-} {
-  const { requestId } = createApprovedRequest(context);
+}> {
+  const { requestId } = await createApprovedRequest(context);
 
-  context.requestSessionService.startSessionForPatient(PATIENT_USER_ID, requestId);
+  await context.requestSessionService.startSessionForPatient(PATIENT_USER_ID, requestId);
 
   const answerInputs = createAnswerInputs(220);
   for (let index = 0; index < answerInputs.length; index += 55) {
-    context.requestSessionService.saveAnswersForPatient(PATIENT_USER_ID, requestId, {
+    await context.requestSessionService.saveAnswersForPatient(PATIENT_USER_ID, requestId, {
       answers: answerInputs.slice(index, index + 55),
     });
   }
 
-  const submittedState = context.requestSessionService.submitSessionForPatient(PATIENT_USER_ID, requestId);
+  const submittedState = await context.requestSessionService.submitSessionForPatient(PATIENT_USER_ID, requestId);
 
   return {
     requestId,
@@ -139,44 +158,44 @@ function createSubmittedSession(context: IntegrationContext): {
 describe('MMPI-2 integration negative path hardening', () => {
   it('rejects illegal lifecycle transitions and keeps workflow state intact', async () => {
     await withIntegrationContext(async (context) => {
-      seedProfiles(context.profileService);
+      await seedProfiles(context.profileService);
 
-      const { requestId } = createApprovedRequest(context);
+      const { requestId } = await createApprovedRequest(context);
 
-      const readyState = context.requestSessionService.getSessionStateForPatient(PATIENT_USER_ID, requestId);
+      const readyState = await context.requestSessionService.getSessionStateForPatient(PATIENT_USER_ID, requestId);
       expect(readyState.request.status).toBe(AssessmentRequestStatus.APPROVED);
       expect(readyState.session.status).toBe(ExamSessionStatus.READY_TO_START);
 
-      expect(() =>
+      await expect(
         context.requestSessionService.submitSessionForPatient(PATIENT_USER_ID, requestId),
-      ).toThrow(ConflictException);
+      ).rejects.toThrow(ConflictException);
 
-      const stateAfterIllegalSubmit = context.requestSessionService.getSessionStateForPatient(
+      const stateAfterIllegalSubmit = await context.requestSessionService.getSessionStateForPatient(
         PATIENT_USER_ID,
         requestId,
       );
       expect(stateAfterIllegalSubmit.session.status).toBe(ExamSessionStatus.READY_TO_START);
 
-      expect(() =>
+      await expect(
         context.requestSessionService.reviewRequest(requestId, {
           decision: 'rejected',
         }),
-      ).toThrow(ConflictException);
+      ).rejects.toThrow(ConflictException);
 
-      const stateAfterIllegalReview = context.requestSessionService.getSessionStateForPatient(
+      const stateAfterIllegalReview = await context.requestSessionService.getSessionStateForPatient(
         PATIENT_USER_ID,
         requestId,
       );
       expect(stateAfterIllegalReview.request.status).toBe(AssessmentRequestStatus.APPROVED);
 
-      const startedState = context.requestSessionService.startSessionForPatient(PATIENT_USER_ID, requestId);
+      const startedState = await context.requestSessionService.startSessionForPatient(PATIENT_USER_ID, requestId);
       expect(startedState.session.status).toBe(ExamSessionStatus.IN_PROGRESS);
 
-      expect(() =>
+      await expect(
         context.scoringService.runScoringForSubmittedSession(startedState.session.id),
-      ).toThrow(ConflictException);
+      ).rejects.toThrow(ConflictException);
 
-      const stateAfterIllegalScoring = context.requestSessionService.getSessionStateForPatient(
+      const stateAfterIllegalScoring = await context.requestSessionService.getSessionStateForPatient(
         PATIENT_USER_ID,
         requestId,
       );
@@ -186,12 +205,12 @@ describe('MMPI-2 integration negative path hardening', () => {
 
   it('rejects post-submit answer mutation and preserves submitted answer snapshot', async () => {
     await withIntegrationContext(async (context) => {
-      seedProfiles(context.profileService);
+      await seedProfiles(context.profileService);
 
-      const { requestId } = createApprovedRequest(context);
-      context.requestSessionService.startSessionForPatient(PATIENT_USER_ID, requestId);
+      const { requestId } = await createApprovedRequest(context);
+      await context.requestSessionService.startSessionForPatient(PATIENT_USER_ID, requestId);
 
-      context.requestSessionService.saveAnswersForPatient(PATIENT_USER_ID, requestId, {
+      await context.requestSessionService.saveAnswersForPatient(PATIENT_USER_ID, requestId, {
         answers: [
           {
             questionNumber: 1,
@@ -204,10 +223,10 @@ describe('MMPI-2 integration negative path hardening', () => {
         ],
       });
 
-      const submittedState = context.requestSessionService.submitSessionForPatient(PATIENT_USER_ID, requestId);
+      const submittedState = await context.requestSessionService.submitSessionForPatient(PATIENT_USER_ID, requestId);
       expect(submittedState.session.status).toBe(ExamSessionStatus.SUBMITTED);
 
-      expect(() =>
+      await expect(
         context.requestSessionService.saveAnswersForPatient(PATIENT_USER_ID, requestId, {
           answers: [
             {
@@ -220,9 +239,9 @@ describe('MMPI-2 integration negative path hardening', () => {
             },
           ],
         }),
-      ).toThrow(ConflictException);
+      ).rejects.toThrow(ConflictException);
 
-      const reloadedState = context.requestSessionService.getSessionStateForPatient(PATIENT_USER_ID, requestId);
+      const reloadedState = await context.requestSessionService.getSessionStateForPatient(PATIENT_USER_ID, requestId);
       expect(reloadedState.session.status).toBe(ExamSessionStatus.SUBMITTED);
       expect(reloadedState.progress.answeredCount).toBe(2);
       expect(reloadedState.answers).toHaveLength(2);
@@ -233,10 +252,10 @@ describe('MMPI-2 integration negative path hardening', () => {
 
   it('deduplicates duplicate payment webhook delivery without duplicate request transitions', async () => {
     await withIntegrationContext(async (context) => {
-      context.paymentService.updateBillingMode(BillingMode.MIDTRANS);
-      seedProfiles(context.profileService);
+      await context.paymentService.updateBillingMode(BillingMode.MIDTRANS);
+      await seedProfiles(context.profileService);
 
-      const createdRequest = context.requestSessionService.createAssessmentRequest(PATIENT_USER_ID, {
+      const createdRequest = await context.requestSessionService.createAssessmentRequest(PATIENT_USER_ID, {
         purpose: 'Webhook duplicate delivery test',
       });
 
@@ -247,7 +266,7 @@ describe('MMPI-2 integration negative path hardening', () => {
         createdRequest.id,
       );
 
-      const payment = context.paymentService.listPaymentsByRequestId(createdRequest.id).at(-1);
+      const payment = (await context.paymentService.listPaymentsByRequestId(createdRequest.id)).at(-1);
       expect(payment).toBeDefined();
       if (payment === undefined || payment.providerReferenceId === null) {
         throw new Error('Expected active payment with provider reference.');
@@ -278,24 +297,24 @@ describe('MMPI-2 integration negative path hardening', () => {
 
   it('treats frozen version refs as authoritative and blocks scoring when they drift', async () => {
     await withIntegrationContext(async (context) => {
-      seedProfiles(context.profileService);
+      await seedProfiles(context.profileService);
 
-      const submitted = createSubmittedSession(context);
-      const stateBeforeTamper = context.requestSessionService.getSessionStateForPatient(
+      const submitted = await createSubmittedSession(context);
+      const stateBeforeTamper = await context.requestSessionService.getSessionStateForPatient(
         PATIENT_USER_ID,
         submitted.requestId,
       );
 
-      context.requestSessionRepository.saveSession(stateBeforeTamper.session, {
+      await context.requestSessionRepository.saveSession(stateBeforeTamper.session, {
         ...submitted.frozenVersions,
         scoringConfigVersionId: 'mmpi2-scoring-config-v9999',
       });
 
-      expect(() => context.scoringService.runScoringForSubmittedSession(submitted.sessionId)).toThrow(
+      await expect(context.scoringService.runScoringForSubmittedSession(submitted.sessionId)).rejects.toThrow(
         ConflictException,
       );
 
-      const stateAfterRejectedScoring = context.requestSessionService.getSessionStateForPatient(
+      const stateAfterRejectedScoring = await context.requestSessionService.getSessionStateForPatient(
         PATIENT_USER_ID,
         submitted.requestId,
       );
@@ -305,8 +324,11 @@ describe('MMPI-2 integration negative path hardening', () => {
         'mmpi2-scoring-config-v9999',
       );
 
-      context.requestSessionRepository.saveSession(stateAfterRejectedScoring.session, submitted.frozenVersions);
-      const scoredView = context.scoringService.runScoringForSubmittedSession(submitted.sessionId);
+      await context.requestSessionRepository.saveSession(
+        stateAfterRejectedScoring.session,
+        submitted.frozenVersions,
+      );
+      const scoredView = await context.scoringService.runScoringForSubmittedSession(submitted.sessionId);
       expect(scoredView.resultSet.status).toBe(ScoreResultSetStatus.COMPLETED);
       expect(scoredView.resultSet.scoringConfigVersionId).toBe(
         submitted.frozenVersions.scoringConfigVersionId,
@@ -316,22 +338,22 @@ describe('MMPI-2 integration negative path hardening', () => {
 
   it('keeps published reports immutable and enforces amendment lineage constraints', async () => {
     await withIntegrationContext(async (context) => {
-      seedProfiles(context.profileService);
+      await seedProfiles(context.profileService);
 
-      const submitted = createSubmittedSession(context);
-      const scoredView = context.scoringService.runScoringForSubmittedSession(submitted.sessionId);
+      const submitted = await createSubmittedSession(context);
+      const scoredView = await context.scoringService.runScoringForSubmittedSession(submitted.sessionId);
       expect(scoredView.resultSet.status).toBe(ScoreResultSetStatus.COMPLETED);
 
-      context.reportService.saveDraftForDoctor(submitted.sessionId, DOCTOR_USER_ID, {
+      await context.reportService.saveDraftForDoctor(submitted.sessionId, DOCTOR_USER_ID, {
         interpretationSummary: 'Draft summary for immutability negative checks.',
         narrative: 'Draft narrative before sign-off.',
       });
 
-      context.reportService.signReportForDoctor(submitted.sessionId, DOCTOR_USER_ID, {
+      await context.reportService.signReportForDoctor(submitted.sessionId, DOCTOR_USER_ID, {
         signatureStoragePath: 'signatures/doctor-negative-suite.png',
       });
 
-      const published = context.reportService.publishReportForDoctor(submitted.sessionId, DOCTOR_USER_ID, {
+      const published = await context.reportService.publishReportForDoctor(submitted.sessionId, DOCTOR_USER_ID, {
         interpretationSummary: 'Published interpretation baseline for lineage constraints.',
         narrative: 'Published narrative baseline that must stay immutable.',
       });
@@ -342,13 +364,13 @@ describe('MMPI-2 integration negative path hardening', () => {
       }
 
       expect(publishedReport.reportStatus).toBe(ClinicalReportStatus.PUBLISHED);
-      expect(() =>
+      await expect(
         context.reportService.saveDraftForDoctor(submitted.sessionId, DOCTOR_USER_ID, {
           narrative: 'Illegal direct edit attempt on published report.',
         }),
-      ).toThrow(ConflictException);
+      ).rejects.toThrow(ConflictException);
 
-      const stateAfterIllegalDirectEdit = context.reportService.getReportStateForDoctor(
+      const stateAfterIllegalDirectEdit = await context.reportService.getReportStateForDoctor(
         submitted.sessionId,
         DOCTOR_USER_ID,
       );
@@ -358,7 +380,7 @@ describe('MMPI-2 integration negative path hardening', () => {
         'Published narrative baseline that must stay immutable.',
       );
 
-      const amended = context.reportService.amendPublishedReportForDoctor(
+      const amended = await context.reportService.amendPublishedReportForDoctor(
         submitted.sessionId,
         DOCTOR_USER_ID,
         {
@@ -375,18 +397,21 @@ describe('MMPI-2 integration negative path hardening', () => {
       const amendedReportId = amended.report?.id;
       expect(amendedReportId).toBeDefined();
 
-      const amendedAncestor = context.reportRepository.findReportById(publishedReport.id);
+      const amendedAncestor = await context.reportRepository.findReportById(publishedReport.id);
       expect(amendedAncestor?.reportStatus).toBe(ClinicalReportStatus.AMENDED);
       expect(amendedAncestor?.narrative).toBe('Published narrative baseline that must stay immutable.');
 
-      expect(() =>
+      await expect(
         context.reportService.publishReportForDoctor(submitted.sessionId, DOCTOR_USER_ID, {
           interpretationSummary: 'Illegal republish attempt',
           narrative: 'Latest report is already published and must be amended instead.',
         }),
-      ).toThrow(ConflictException);
+      ).rejects.toThrow(ConflictException);
 
-      const finalState = context.reportService.getReportStateForDoctor(submitted.sessionId, DOCTOR_USER_ID);
+      const finalState = await context.reportService.getReportStateForDoctor(
+        submitted.sessionId,
+        DOCTOR_USER_ID,
+      );
       expect(finalState.report?.id).toBe(amendedReportId);
       expect(finalState.report?.amendedFromId).toBe(publishedReport.id);
     });

@@ -2,18 +2,18 @@ import { Module } from '@nestjs/common';
 import { MidtransGateway } from './gateways/midtrans.gateway';
 import { NullGateway } from './gateways/null.gateway';
 import { XenditGateway } from './gateways/xendit.gateway';
-import { InMemoryPaymentRepository } from './in-memory-payment.repository';
 import { PaymentController } from './payment.controller';
 import { PaymentRepository } from './payment.repository';
 import { PaymentService } from './payment.service';
+import { PrismaPaymentRepository } from './prisma-payment.repository';
 
 @Module({
   controllers: [PaymentController],
   providers: [
-    InMemoryPaymentRepository,
+    PrismaPaymentRepository,
     {
       provide: PaymentRepository,
-      useExisting: InMemoryPaymentRepository,
+      useExisting: PrismaPaymentRepository,
     },
     NullGateway,
     MidtransGateway,

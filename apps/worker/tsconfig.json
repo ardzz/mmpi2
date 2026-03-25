@@ -5,7 +5,10 @@
     "rootDir": "src",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@mmpi2/db": ["../../packages/db/dist/index.d.ts"],
+      "@mmpi2/db/client": ["../../packages/db/dist/client.d.ts"],
+      "@mmpi2/reports": ["../../packages/reports/dist/index.d.ts"]
     }
   },
   "include": ["src/**/*"],

@@ -1,7 +1,8 @@
-import { MMPI2_1989_REFERENCE_CATALOG } from '@mmpi2/config';
+import {
+  MMPI2_1989_REFERENCE_CATALOG,
+  MMPI2_ASSESSMENT_TYPE_ID,
+} from '@mmpi2/config';
 import type { PrismaClient } from '../generated/client/index.js';
-
-const ASSESSMENT_TYPE_ID = '00000000-0000-0000-0000-000000000010';
 
 function mapScaleGroup(group: string): string {
   switch (group) {
@@ -29,7 +30,7 @@ export async function seedReferenceData(prisma: PrismaClient) {
       description: 'Minnesota Multiphasic Personality Inventory-2',
     },
     create: {
-      id: ASSESSMENT_TYPE_ID,
+      id: MMPI2_ASSESSMENT_TYPE_ID,
       code: versionTriplet.instrument.name,
       name: versionTriplet.instrument.name,
       description: 'Minnesota Multiphasic Personality Inventory-2',
@@ -39,14 +40,14 @@ export async function seedReferenceData(prisma: PrismaClient) {
   await prisma.instrumentVersion.upsert({
     where: { id: versionTriplet.instrument.id },
     update: {
-      assessmentTypeId: ASSESSMENT_TYPE_ID,
+      assessmentTypeId: MMPI2_ASSESSMENT_TYPE_ID,
       versionLabel: versionTriplet.instrument.revision,
       isActive: versionTriplet.instrument.isActive,
       effectiveFrom: new Date(versionTriplet.instrument.publishedAt),
     },
     create: {
       id: versionTriplet.instrument.id,
-      assessmentTypeId: ASSESSMENT_TYPE_ID,
+      assessmentTypeId: MMPI2_ASSESSMENT_TYPE_ID,
       versionLabel: versionTriplet.instrument.revision,
       isActive: versionTriplet.instrument.isActive,
       effectiveFrom: new Date(versionTriplet.instrument.publishedAt),

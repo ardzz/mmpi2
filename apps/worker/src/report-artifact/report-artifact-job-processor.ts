@@ -6,12 +6,14 @@ import {
   type ReportArtifactJobResult,
 } from '@mmpi2/reports';
 import type { ArtifactStorage } from './artifact-storage';
+import type { ReportDocumentRegistry } from './report-document-registry';
 import type { ReportPdfRenderer } from './report-pdf-renderer';
 
 export class ReportArtifactJobProcessor {
   constructor(
     private readonly artifactStorage: ArtifactStorage,
     private readonly reportPdfRenderer: ReportPdfRenderer,
+    private readonly reportDocumentRegistry: ReportDocumentRegistry,
   ) {}
 
   async process(payload: ReportArtifactJobPayload): Promise<ReportArtifactJobResult> {
@@ -31,7 +33,7 @@ export class ReportArtifactJobProcessor {
       },
     });
 
-    return ReportArtifactJobResultSchema.parse({
+    const result = ReportArtifactJobResultSchema.parse({
       jobId: normalizedPayload.jobId,
       reportId: normalizedPayload.source.report.id,
       scoreResultSetId: normalizedPayload.source.scoreResultSet.id,
@@ -42,5 +44,9 @@ export class ReportArtifactJobProcessor {
       checksumSha256: artifactMetadata.checksumSha256,
       generatedAt: artifactMetadata.createdAt,
     });
+
+    await this.reportDocumentRegistry.persistGeneratedArtifact(normalizedPayload, result);
+
+    return result;
   }
 }

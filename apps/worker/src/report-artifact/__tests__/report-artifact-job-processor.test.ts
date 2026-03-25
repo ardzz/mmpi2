@@ -5,6 +5,7 @@ import {
 } from 'vitest';
 import { InMemoryArtifactStorage } from '../in-memory-artifact-storage';
 import { ReportArtifactJobProcessor } from '../report-artifact-job-processor';
+import { ReportDocumentRegistry } from '../report-document-registry';
 import {
   ReportPdfRenderer,
 } from '../report-pdf-renderer';
@@ -16,10 +17,20 @@ class FakeReportPdfRenderer extends ReportPdfRenderer {
   }
 }
 
+class NoopReportDocumentRegistry extends ReportDocumentRegistry {
+  async persistGeneratedArtifact(): Promise<void> {
+    return Promise.resolve();
+  }
+}
+
 describe('ReportArtifactJobProcessor', () => {
   it('renders and stores a report artifact with deterministic metadata', async () => {
     const storage = new InMemoryArtifactStorage();
-    const processor = new ReportArtifactJobProcessor(storage, new FakeReportPdfRenderer());
+    const processor = new ReportArtifactJobProcessor(
+      storage,
+      new FakeReportPdfRenderer(),
+      new NoopReportDocumentRegistry(),
+    );
     const payload = createReportArtifactJobPayload();
 
     const result = await processor.process(payload);

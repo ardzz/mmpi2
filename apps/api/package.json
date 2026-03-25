@@ -18,6 +18,7 @@
     "@mmpi2/auth": "workspace:*",
     "@mmpi2/config": "workspace:*",
     "@mmpi2/contracts": "workspace:*",
+    "@mmpi2/db": "workspace:*",
     "@mmpi2/scoring": "workspace:*",
     "@nestjs/common": "^10.4.15",
     "@nestjs/core": "^10.4.15",

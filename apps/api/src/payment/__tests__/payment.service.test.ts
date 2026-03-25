@@ -53,31 +53,31 @@ function buildRequest(overrides: Partial<AssessmentRequest> = {}): AssessmentReq
 }
 
 describe('PaymentService', () => {
-  it('reads and updates global billing mode settings', () => {
+  it('reads and updates global billing mode settings', async () => {
     const { service } = createService();
 
-    expect(service.getBillingSettings().billingMode).toBe(BillingMode.DISABLED);
+    expect((await service.getBillingSettings()).billingMode).toBe(BillingMode.DISABLED);
 
-    service.updateBillingMode(BillingMode.MIDTRANS);
-    expect(service.getBillingSettings().billingMode).toBe(BillingMode.MIDTRANS);
+    await service.updateBillingMode(BillingMode.MIDTRANS);
+    expect((await service.getBillingSettings()).billingMode).toBe(BillingMode.MIDTRANS);
 
-    service.updateBillingMode(BillingMode.XENDIT);
-    expect(service.getBillingSettings().billingMode).toBe(BillingMode.XENDIT);
+    await service.updateBillingMode(BillingMode.XENDIT);
+    expect((await service.getBillingSettings()).billingMode).toBe(BillingMode.XENDIT);
   });
 
   it('snapshots billing mode per request so mode changes only affect new requests', async () => {
     const { service } = createService();
-    service.updateBillingMode(BillingMode.MIDTRANS);
+    await service.updateBillingMode(BillingMode.MIDTRANS);
 
     const firstRequestId = '11111111-1111-4111-8111-111111111111';
     const secondRequestId = '22222222-2222-4222-8222-222222222222';
 
-    const firstPlan = service.createBillingPlanForNewRequest(firstRequestId);
+    const firstPlan = await service.createBillingPlanForNewRequest(firstRequestId);
     expect(firstPlan.billingMode).toBe(BillingMode.MIDTRANS);
     expect(firstPlan.paymentRequirement).toBe(PaymentRequirement.GATEWAY_REQUIRED);
 
-    service.updateBillingMode(BillingMode.XENDIT);
-    const secondPlan = service.createBillingPlanForNewRequest(secondRequestId);
+    await service.updateBillingMode(BillingMode.XENDIT);
+    const secondPlan = await service.createBillingPlanForNewRequest(secondRequestId);
     expect(secondPlan.billingMode).toBe(BillingMode.XENDIT);
 
     const firstRequest = buildRequest({ id: firstRequestId });
@@ -94,7 +94,7 @@ describe('PaymentService', () => {
     const { service } = createService();
     const requestId = '33333333-3333-4333-8333-333333333333';
 
-    const plan = service.createBillingPlanForNewRequest(requestId);
+    const plan = await service.createBillingPlanForNewRequest(requestId);
     expect(plan.paymentRequirement).toBe(PaymentRequirement.FREE);
     expect(plan.paymentSatisfied).toBe(true);
 
@@ -109,7 +109,7 @@ describe('PaymentService', () => {
       ),
     ).rejects.toThrow(ConflictException);
 
-    expect(service.listPaymentsByRequestId(requestId)).toEqual([]);
+    expect(await service.listPaymentsByRequestId(requestId)).toEqual([]);
   });
 
   it('supports manual confirmation and waiver transitions on payment records', async () => {
@@ -117,9 +117,9 @@ describe('PaymentService', () => {
     const confirmRequestId = '44444444-4444-4444-8444-444444444444';
     const waiveRequestId = '55555555-5555-4555-8555-555555555555';
 
-    service.updateBillingMode(BillingMode.MIDTRANS);
-    service.createBillingPlanForNewRequest(confirmRequestId);
-    service.createBillingPlanForNewRequest(waiveRequestId);
+    await service.updateBillingMode(BillingMode.MIDTRANS);
+    await service.createBillingPlanForNewRequest(confirmRequestId);
+    await service.createBillingPlanForNewRequest(waiveRequestId);
 
     const createdForConfirm = await service.createPaymentForRequest(
       buildRequest({ id: confirmRequestId }),
@@ -130,7 +130,10 @@ describe('PaymentService', () => {
       activePaymentId: createdForConfirm.payment.id,
     });
 
-    const confirmed = service.confirmPaymentManually(confirmRequest, 'Confirmed via admin transfer check.');
+    const confirmed = await service.confirmPaymentManually(
+      confirmRequest,
+      'Confirmed via admin transfer check.',
+    );
     expect(confirmed.paymentStatus).toBe(PaymentStatus.PAID);
     expect(confirmed.paidAt).not.toBeNull();
 
@@ -141,16 +144,16 @@ describe('PaymentService', () => {
       activePaymentId: createdForWaive.payment.id,
     });
 
-    const waived = service.waivePayment(waiveRequest, 'Waiver granted by admin policy.');
+    const waived = await service.waivePayment(waiveRequest, 'Waiver granted by admin policy.');
     expect(waived?.paymentStatus).toBe(PaymentStatus.WAIVED);
   });
 
   it('deduplicates provider webhooks by idempotency key and keeps event log append-only', async () => {
     const { service, repository } = createService();
-    service.updateBillingMode(BillingMode.MIDTRANS);
+    await service.updateBillingMode(BillingMode.MIDTRANS);
 
     const requestId = '66666666-6666-4666-8666-666666666666';
-    service.createBillingPlanForNewRequest(requestId);
+    await service.createBillingPlanForNewRequest(requestId);
 
     const created = await service.createPaymentForRequest(buildRequest({ id: requestId }));
     const providerReferenceId = created.payment.providerReferenceId;
@@ -178,17 +181,17 @@ describe('PaymentService', () => {
     expect(secondProcess.wasDuplicate).toBe(true);
     expect(secondProcess.payment.paymentStatus).toBe(PaymentStatus.PAID);
 
-    const events = repository.listPaymentEventsByPaymentId(created.payment.id);
+    const events = await repository.listPaymentEventsByPaymentId(created.payment.id);
     expect(events).toHaveLength(2);
     expect(events.at(-1)?.idempotencyKey).toBe('midtrans:evt-midtrans-paid-001');
   });
 
   it('maps verified provider statuses into payment state updates without requiring session logic', async () => {
     const { service, repository } = createService();
-    service.updateBillingMode(BillingMode.XENDIT);
+    await service.updateBillingMode(BillingMode.XENDIT);
 
     const requestId = '77777777-7777-4777-8777-777777777777';
-    service.createBillingPlanForNewRequest(requestId);
+    await service.createBillingPlanForNewRequest(requestId);
 
     const created = await service.createPaymentForRequest(buildRequest({ id: requestId }));
     const providerReferenceId = created.payment.providerReferenceId;
@@ -218,16 +221,16 @@ describe('PaymentService', () => {
     expect(cancelledResult.payment.paymentStatus).toBe(PaymentStatus.FAILED);
     expect(cancelledResult.event.eventType).toBe('payment_cancelled');
 
-    const events = repository.listPaymentEventsByPaymentId(created.payment.id);
+    const events = await repository.listPaymentEventsByPaymentId(created.payment.id);
     expect(events.some((event) => event.eventType === 'payment_cancelled')).toBe(true);
   });
 
   it('records rejected webhook payloads without applying payment transitions', async () => {
     const { service, repository } = createService();
-    service.updateBillingMode(BillingMode.MIDTRANS);
+    await service.updateBillingMode(BillingMode.MIDTRANS);
 
     const requestId = '88888888-8888-4888-8888-888888888888';
-    service.createBillingPlanForNewRequest(requestId);
+    await service.createBillingPlanForNewRequest(requestId);
     const created = await service.createPaymentForRequest(buildRequest({ id: requestId }));
 
     const rejected = await service.processWebhook({
@@ -244,7 +247,7 @@ describe('PaymentService', () => {
     expect(rejected.payment.paymentStatus).toBe(PaymentStatus.PENDING);
     expect(rejected.event.signatureVerified).toBe(false);
 
-    const events = repository.listPaymentEventsByPaymentId(created.payment.id);
+    const events = await repository.listPaymentEventsByPaymentId(created.payment.id);
     expect(events).toHaveLength(2);
   });
 });

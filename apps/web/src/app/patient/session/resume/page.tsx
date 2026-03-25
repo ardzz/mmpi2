@@ -1,11 +1,35 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { PlayCircle, Clock, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { fetchApi } from '../../../../lib/api-client';
+import type { SessionProgress } from '@mmpi2/contracts';
 
-export default function ResumeSessionPage() {
-  // In a real implementation, these would come from server state/context
-  const totalQuestions = 567;
-  const answeredQuestions = 142;
-  const progressPercentage = Math.round((answeredQuestions / totalQuestions) * 100);
+interface ResumeSessionPageProps {
+  searchParams: Promise<{ requestId?: string }>;
+}
+
+interface RequestSessionStateResponse {
+  progress: SessionProgress;
+}
+
+export default async function ResumeSessionPage({ searchParams }: ResumeSessionPageProps) {
+  const resolvedParams = await searchParams;
+  const requestId = resolvedParams.requestId;
+
+  if (!requestId) {
+    redirect('/patient');
+  }
+
+  let sessionState: RequestSessionStateResponse | null = null;
+  try {
+    sessionState = await fetchApi<RequestSessionStateResponse>(`/workflow/requests/${requestId}/session`);
+  } catch (error) {
+    console.error('Failed to load resumable session state:', error);
+  }
+
+  const totalQuestions = sessionState?.progress.totalQuestions ?? 567;
+  const answeredQuestions = sessionState?.progress.answeredCount ?? 0;
+  const progressPercentage = Math.round(sessionState?.progress.percentComplete ?? 0);
 
   return (
     <div className="max-w-3xl mx-auto space-y-8">
@@ -76,10 +100,10 @@ export default function ResumeSessionPage() {
             >
               Return to Dashboard
             </Link>
-            <Link
-              href="/patient/session/active"
-              className="inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-primary-container)] px-8 py-3 text-sm font-semibold text-white shadow-[var(--shadow-ambient)] hover:from-[var(--color-primary-container)] hover:to-[var(--color-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] transition-all"
-            >
+              <Link
+                href={`/patient/session/active?requestId=${requestId}`}
+                className="inline-flex items-center justify-center gap-2 rounded-[var(--radius-md)] bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-primary-container)] px-8 py-3 text-sm font-semibold text-white shadow-[var(--shadow-ambient)] hover:from-[var(--color-primary-container)] hover:to-[var(--color-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] transition-all"
+              >
               <PlayCircle className="w-4 h-4" />
               Resume Assessment
             </Link>

@@ -7,6 +7,8 @@ export default defineConfig({
       '@mmpi2/auth': fileURLToPath(new URL('../../packages/auth/src/index.ts', import.meta.url)),
       '@mmpi2/config': fileURLToPath(new URL('../../packages/config/src/index.ts', import.meta.url)),
       '@mmpi2/contracts': fileURLToPath(new URL('../../packages/contracts/src/index.ts', import.meta.url)),
+      '@mmpi2/db/client': fileURLToPath(new URL('../../packages/db/src/client.ts', import.meta.url)),
+      '@mmpi2/db': fileURLToPath(new URL('../../packages/db/src/index.ts', import.meta.url)),
       '@mmpi2/reports': fileURLToPath(new URL('../../packages/reports/src/index.ts', import.meta.url)),
       '@mmpi2/scoring': fileURLToPath(new URL('../../packages/scoring/src/index.ts', import.meta.url)),
     },

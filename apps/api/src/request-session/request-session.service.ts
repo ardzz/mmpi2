@@ -1,9 +1,16 @@
 import { randomUUID } from 'node:crypto';
-import { MMPI2_1989_TRIPLET } from '@mmpi2/config';
 import {
+  MMPI2_1989_TRIPLET,
+  MMPI2_ASSESSMENT_TYPE_ID,
+} from '@mmpi2/config';
+import {
+  type AdminAssignmentDetail,
+  type AdminRequestDetail,
+  type AdminRequestQueueItem,
   AnswerState,
   AssessmentRequestSchema,
   AssessmentRequestStatus,
+  type DoctorCaseQueueItem,
   ExamSessionSchema,
   ExamSessionStatus,
   PaymentStatus,
@@ -60,15 +67,15 @@ export class RequestSessionService {
     private readonly paymentService: PaymentService,
   ) {}
 
-  createAssessmentRequest(patientUserId: string, payload: CreateAssessmentRequestDto): AssessmentRequest {
-    const patientProfile = this.profileService.getPatientProfileByUserId(patientUserId);
+  async createAssessmentRequest(patientUserId: string, payload: CreateAssessmentRequestDto): Promise<AssessmentRequest> {
+    const patientProfile = await this.profileService.getPatientProfileByUserId(patientUserId);
     if (!patientProfile.isProfileComplete) {
       throw new ForbiddenException('Patient profile must be complete before creating an assessment request.');
     }
 
     const requestId = randomUUID();
     const now = new Date();
-    const billingPlan = this.paymentService.createBillingPlanForNewRequest(requestId);
+    const billingPlan = await this.paymentService.createBillingPlanForNewRequest(requestId);
     const targetStatus = billingPlan.initialRequestStatus;
 
     if (!canTransitionRequest(AssessmentRequestStatus.DRAFT, targetStatus)) {
@@ -78,7 +85,7 @@ export class RequestSessionService {
     const request: AssessmentRequest = {
       id: requestId,
       patientUserId,
-      assessmentTypeId: MMPI2_1989_TRIPLET.instrument.id,
+      assessmentTypeId: MMPI2_ASSESSMENT_TYPE_ID,
       status: targetStatus,
       paymentRequirement: billingPlan.paymentRequirement,
       paymentSatisfied: billingPlan.paymentSatisfied,
@@ -91,11 +98,13 @@ export class RequestSessionService {
       updatedAt: now,
     };
 
-    return this.repository.saveRequest(AssessmentRequestSchema.parse(request));
+    const savedRequest = await this.repository.saveRequest(AssessmentRequestSchema.parse(request));
+    await this.paymentService.saveRequestBillingModeSnapshot(savedRequest.id, billingPlan.billingMode);
+    return savedRequest;
   }
 
-  assignDoctor(requestId: string, payload: AssignDoctorDto): AssessmentRequest {
-    const request = this.mustFindRequest(requestId);
+  async assignDoctor(requestId: string, payload: AssignDoctorDto): Promise<AssessmentRequest> {
+    const request = await this.mustFindRequest(requestId);
 
     if (
       request.status === AssessmentRequestStatus.REJECTED ||
@@ -104,12 +113,12 @@ export class RequestSessionService {
       throw new ConflictException(`Cannot assign doctor while request is '${request.status}'.`);
     }
 
-    const doctorProfile = this.profileService.getDoctorProfileByUserId(payload.doctorUserId);
+    const doctorProfile = await this.profileService.getDoctorProfileByUserId(payload.doctorUserId);
     if (!doctorProfile.isActive) {
       throw new ConflictException(`Doctor '${payload.doctorUserId}' is not active.`);
     }
 
-    const updatedRequest = this.repository.saveRequest(
+    const updatedRequest = await this.repository.saveRequest(
       AssessmentRequestSchema.parse({
         ...request,
         doctorUserId: payload.doctorUserId,
@@ -117,12 +126,12 @@ export class RequestSessionService {
       }),
     );
 
-    this.syncSessionAvailability(updatedRequest);
+    await this.syncSessionAvailability(updatedRequest);
     return updatedRequest;
   }
 
-  reviewRequest(requestId: string, payload: ReviewRequestDto): AssessmentRequest {
-    const request = this.mustFindRequest(requestId);
+  async reviewRequest(requestId: string, payload: ReviewRequestDto): Promise<AssessmentRequest> {
+    const request = await this.mustFindRequest(requestId);
     const nextStatus =
       payload.decision === 'approved'
         ? AssessmentRequestStatus.APPROVED
@@ -136,7 +145,7 @@ export class RequestSessionService {
 
     let assignedDoctorUserId = request.doctorUserId;
     if (payload.doctorUserId !== undefined) {
-      const doctorProfile = this.profileService.getDoctorProfileByUserId(payload.doctorUserId);
+      const doctorProfile = await this.profileService.getDoctorProfileByUserId(payload.doctorUserId);
       if (!doctorProfile.isActive) {
         throw new ConflictException(`Doctor '${payload.doctorUserId}' is not active.`);
       }
@@ -144,7 +153,7 @@ export class RequestSessionService {
       assignedDoctorUserId = payload.doctorUserId;
     }
 
-    const updatedRequest = this.repository.saveRequest(
+    const updatedRequest = await this.repository.saveRequest(
       AssessmentRequestSchema.parse({
         ...request,
         status: nextStatus,
@@ -155,8 +164,8 @@ export class RequestSessionService {
     );
 
     if (nextStatus === AssessmentRequestStatus.APPROVED) {
-      this.ensureSessionCreatedForApprovedRequest(updatedRequest);
-      this.syncSessionAvailability(updatedRequest);
+      await this.ensureSessionCreatedForApprovedRequest(updatedRequest);
+      await this.syncSessionAvailability(updatedRequest);
     }
 
     return updatedRequest;
@@ -166,7 +175,7 @@ export class RequestSessionService {
     patientUserId: string,
     requestId: string,
   ): Promise<{ request: AssessmentRequest; paymentId: string }> {
-    const request = this.mustFindPatientOwnedRequest(patientUserId, requestId);
+    const request = await this.mustFindPatientOwnedRequest(patientUserId, requestId);
     const createdPayment = await this.paymentService.createPaymentForRequest(request);
 
     const requestStatus = createdPayment.requestStatus;
@@ -176,7 +185,7 @@ export class RequestSessionService {
       );
     }
 
-    const updatedRequest = this.repository.saveRequest(
+    const updatedRequest = await this.repository.saveRequest(
       AssessmentRequestSchema.parse({
         ...request,
         status: requestStatus,
@@ -193,7 +202,7 @@ export class RequestSessionService {
 
   async processPaymentWebhook(payload: PaymentWebhookPayload): Promise<AssessmentRequest> {
     const webhookResult = await this.paymentService.processWebhook(payload);
-    const request = this.mustFindRequest(webhookResult.requestId);
+    const request = await this.mustFindRequest(webhookResult.requestId);
 
     if (request.activePaymentId !== webhookResult.payment.id) {
       return request;
@@ -217,12 +226,12 @@ export class RequestSessionService {
     );
   }
 
-  confirmPaymentForRequestManually(
+  async confirmPaymentForRequestManually(
     requestId: string,
     payload: ConfirmPaymentManuallyDto,
-  ): AssessmentRequest {
-    const request = this.mustFindRequest(requestId);
-    const confirmedPayment = this.paymentService.confirmPaymentManually(
+  ): Promise<AssessmentRequest> {
+    const request = await this.mustFindRequest(requestId);
+    const confirmedPayment = await this.paymentService.confirmPaymentManually(
       request,
       payload.adminNote?.trim() ?? null,
     );
@@ -237,7 +246,7 @@ export class RequestSessionService {
       );
     }
 
-    const withConfirmedPayment = this.repository.saveRequest(
+    const withConfirmedPayment = await this.repository.saveRequest(
       AssessmentRequestSchema.parse({
         ...request,
         status: AssessmentRequestStatus.PAYMENT_CONFIRMED,
@@ -262,15 +271,15 @@ export class RequestSessionService {
     );
   }
 
-  waivePaymentForRequest(requestId: string, payload: WaivePaymentDto): AssessmentRequest {
-    const request = this.mustFindRequest(requestId);
+  async waivePaymentForRequest(requestId: string, payload: WaivePaymentDto): Promise<AssessmentRequest> {
+    const request = await this.mustFindRequest(requestId);
     if (request.paymentSatisfied) {
       throw new ConflictException('Payment is already satisfied for this request.');
     }
 
     const requestForWaiver =
       request.status === AssessmentRequestStatus.AWAITING_PAYMENT
-        ? this.repository.saveRequest(
+        ? await this.repository.saveRequest(
             AssessmentRequestSchema.parse({
               ...request,
               status: AssessmentRequestStatus.PAYMENT_PENDING,
@@ -279,7 +288,7 @@ export class RequestSessionService {
           )
         : request;
 
-    this.paymentService.waivePayment(requestForWaiver, payload.adminNote?.trim() ?? null);
+    await this.paymentService.waivePayment(requestForWaiver, payload.adminNote?.trim() ?? null);
 
     const canWaiveFromStatus =
       requestForWaiver.status === AssessmentRequestStatus.AWAITING_PAYMENT ||
@@ -290,7 +299,7 @@ export class RequestSessionService {
       );
     }
 
-    const waivedRequest = this.repository.saveRequest(
+    const waivedRequest = await this.repository.saveRequest(
       AssessmentRequestSchema.parse({
         ...requestForWaiver,
         status: AssessmentRequestStatus.PAYMENT_WAIVED,
@@ -316,16 +325,16 @@ export class RequestSessionService {
     );
   }
 
-  getSessionStateForPatient(patientUserId: string, requestId: string): RequestSessionState {
-    const request = this.mustFindPatientOwnedRequest(patientUserId, requestId);
-    const session = this.mustFindSessionByRequestId(request.id);
-    const answers = this.repository.listAnswersBySessionId(session.id);
+  async getSessionStateForPatient(patientUserId: string, requestId: string): Promise<RequestSessionState> {
+    const request = await this.mustFindPatientOwnedRequest(patientUserId, requestId);
+    const session = await this.mustFindSessionByRequestId(request.id);
+    const answers = await this.repository.listAnswersBySessionId(session.id);
     return this.toSessionState(request, session, answers);
   }
 
-  startSessionForPatient(patientUserId: string, requestId: string): RequestSessionState {
-    const request = this.mustFindPatientOwnedRequest(patientUserId, requestId);
-    const session = this.mustFindSessionByRequestId(request.id);
+  async startSessionForPatient(patientUserId: string, requestId: string): Promise<RequestSessionState> {
+    const request = await this.mustFindPatientOwnedRequest(patientUserId, requestId);
+    const session = await this.mustFindSessionByRequestId(request.id);
 
     const activatable = isSessionActivatable({
       requestApproved: request.status === AssessmentRequestStatus.APPROVED,
@@ -343,12 +352,12 @@ export class RequestSessionService {
 
     let updatedSession = session;
     if (updatedSession.status === ExamSessionStatus.APPROVED) {
-      updatedSession = this.transitionSession(updatedSession, ExamSessionStatus.READY_TO_START);
+      updatedSession = await this.transitionSession(updatedSession, ExamSessionStatus.READY_TO_START);
     }
 
     if (updatedSession.status === ExamSessionStatus.READY_TO_START) {
       const now = new Date();
-      updatedSession = this.transitionSession(
+      updatedSession = await this.transitionSession(
         {
           ...updatedSession,
           startedAt: updatedSession.startedAt ?? now,
@@ -356,7 +365,7 @@ export class RequestSessionService {
         },
         ExamSessionStatus.IN_PROGRESS,
       );
-      this.appendSessionEvent(updatedSession.id, 'session_started', {
+      await this.appendSessionEvent(updatedSession.id, 'session_started', {
         requestId: request.id,
       });
     }
@@ -367,17 +376,17 @@ export class RequestSessionService {
       );
     }
 
-    const answers = this.repository.listAnswersBySessionId(updatedSession.id);
+    const answers = await this.repository.listAnswersBySessionId(updatedSession.id);
     return this.toSessionState(request, updatedSession, answers);
   }
 
-  saveAnswersForPatient(
+  async saveAnswersForPatient(
     patientUserId: string,
     requestId: string,
     payload: SaveAnswersBatchDto,
-  ): RequestSessionState {
-    const request = this.mustFindPatientOwnedRequest(patientUserId, requestId);
-    const session = this.mustFindSessionByRequestId(request.id);
+  ): Promise<RequestSessionState> {
+    const request = await this.mustFindPatientOwnedRequest(patientUserId, requestId);
+    const session = await this.mustFindSessionByRequestId(request.id);
 
     if (session.status === ExamSessionStatus.SUBMITTED) {
       throw new ConflictException('Cannot modify answers after session submission.');
@@ -389,7 +398,7 @@ export class RequestSessionService {
 
     const now = new Date();
     for (const answerInput of payload.answers) {
-      this.repository.upsertAnswer(
+      await this.repository.upsertAnswer(
         SessionAnswerSchema.parse({
           id: randomUUID(),
           examSessionId: session.id,
@@ -400,8 +409,8 @@ export class RequestSessionService {
       );
     }
 
-    const answers = this.repository.listAnswersBySessionId(session.id);
-    const updatedSession = this.repository.saveSession(
+    const answers = await this.repository.listAnswersBySessionId(session.id);
+    const updatedSession = await this.repository.saveSession(
       ExamSessionSchema.parse({
         ...session,
         completionPercentage: this.computeCompletionPercentageInt(answers),
@@ -413,9 +422,9 @@ export class RequestSessionService {
     return this.toSessionState(request, updatedSession, answers);
   }
 
-  submitSessionForPatient(patientUserId: string, requestId: string): RequestSessionState {
-    const request = this.mustFindPatientOwnedRequest(patientUserId, requestId);
-    const session = this.mustFindSessionByRequestId(request.id);
+  async submitSessionForPatient(patientUserId: string, requestId: string): Promise<RequestSessionState> {
+    const request = await this.mustFindPatientOwnedRequest(patientUserId, requestId);
+    const session = await this.mustFindSessionByRequestId(request.id);
 
     if (session.status === ExamSessionStatus.SUBMITTED) {
       throw new ConflictException('Session is already submitted.');
@@ -431,9 +440,9 @@ export class RequestSessionService {
       );
     }
 
-    const answers = this.repository.listAnswersBySessionId(session.id);
+    const answers = await this.repository.listAnswersBySessionId(session.id);
     const now = new Date();
-    const submittedSession = this.repository.saveSession(
+    const submittedSession = await this.repository.saveSession(
       ExamSessionSchema.parse({
         ...session,
         status: ExamSessionStatus.SUBMITTED,
@@ -444,15 +453,23 @@ export class RequestSessionService {
       }),
     );
 
-    this.appendSessionEvent(submittedSession.id, 'session_submitted', {
+    await this.appendSessionEvent(submittedSession.id, 'session_submitted', {
       requestId: request.id,
     });
 
     return this.toSessionState(request, submittedSession, answers);
   }
 
-  private mustFindRequest(requestId: string): AssessmentRequest {
-    const request = this.repository.findRequestById(requestId);
+  async getDoctorCaseQueue(doctorUserId: string, query?: { q?: string }): Promise<DoctorCaseQueueItem[]> {
+    return this.repository.listDoctorCaseQueue(doctorUserId, query);
+  }
+
+  async listAdminRequests(query?: { q?: string; status?: string }): Promise<AdminRequestQueueItem[]> {
+    return this.repository.listAdminRequests(query);
+  }
+
+  async getAdminRequestDetail(requestId: string): Promise<AdminRequestDetail> {
+    const request = await this.repository.getAdminRequestDetail(requestId);
     if (request === null) {
       throw new NotFoundException(`Assessment request '${requestId}' was not found.`);
     }
@@ -460,8 +477,26 @@ export class RequestSessionService {
     return request;
   }
 
-  private mustFindPatientOwnedRequest(patientUserId: string, requestId: string): AssessmentRequest {
-    const request = this.mustFindRequest(requestId);
+  async getAdminAssignmentDetail(requestId: string): Promise<AdminAssignmentDetail> {
+    const assignment = await this.repository.getAdminAssignmentDetail(requestId);
+    if (assignment === null) {
+      throw new NotFoundException(`Assignment detail for request '${requestId}' was not found.`);
+    }
+
+    return assignment;
+  }
+
+  private async mustFindRequest(requestId: string): Promise<AssessmentRequest> {
+    const request = await this.repository.findRequestById(requestId);
+    if (request === null) {
+      throw new NotFoundException(`Assessment request '${requestId}' was not found.`);
+    }
+
+    return request;
+  }
+
+  private async mustFindPatientOwnedRequest(patientUserId: string, requestId: string): Promise<AssessmentRequest> {
+    const request = await this.mustFindRequest(requestId);
     if (request.patientUserId !== patientUserId) {
       throw new ForbiddenException('You are not allowed to access this request/session.');
     }
@@ -469,8 +504,8 @@ export class RequestSessionService {
     return request;
   }
 
-  private mustFindSessionByRequestId(requestId: string): ExamSession {
-    const session = this.repository.findSessionByRequestId(requestId);
+  private async mustFindSessionByRequestId(requestId: string): Promise<ExamSession> {
+    const session = await this.repository.findSessionByRequestId(requestId);
     if (session === null) {
       throw new NotFoundException(
         `Exam session for request '${requestId}' was not found. Admin approval may be pending.`,
@@ -480,8 +515,8 @@ export class RequestSessionService {
     return session;
   }
 
-  private ensureSessionCreatedForApprovedRequest(request: AssessmentRequest): ExamSession {
-    const existing = this.repository.findSessionByRequestId(request.id);
+  private async ensureSessionCreatedForApprovedRequest(request: AssessmentRequest): Promise<ExamSession> {
+    const existing = await this.repository.findSessionByRequestId(request.id);
     if (existing !== null) {
       return existing;
     }
@@ -493,7 +528,7 @@ export class RequestSessionService {
       scoringConfigVersionId: MMPI2_1989_TRIPLET.scoringConfig.id,
     };
 
-    const session = this.repository.saveSession(
+    const session = await this.repository.saveSession(
       ExamSessionSchema.parse({
         id: randomUUID(),
         assessmentRequestId: request.id,
@@ -513,15 +548,15 @@ export class RequestSessionService {
       frozenVersions,
     );
 
-    this.appendSessionEvent(session.id, 'session_approved', {
+    await this.appendSessionEvent(session.id, 'session_approved', {
       requestId: request.id,
     });
 
     return session;
   }
 
-  private syncSessionAvailability(request: AssessmentRequest): void {
-    const session = this.repository.findSessionByRequestId(request.id);
+  private async syncSessionAvailability(request: AssessmentRequest): Promise<void> {
+    const session = await this.repository.findSessionByRequestId(request.id);
     if (session === null) {
       return;
     }
@@ -530,7 +565,7 @@ export class RequestSessionService {
     const refreshedSession =
       session.doctorUserId === request.doctorUserId
         ? session
-        : this.repository.saveSession(
+        : await this.repository.saveSession(
             ExamSessionSchema.parse({
               ...session,
               doctorUserId: request.doctorUserId,
@@ -554,7 +589,7 @@ export class RequestSessionService {
       );
     }
 
-    const readySession = this.repository.saveSession(
+    const readySession = await this.repository.saveSession(
       ExamSessionSchema.parse({
         ...refreshedSession,
         status: ExamSessionStatus.READY_TO_START,
@@ -562,12 +597,15 @@ export class RequestSessionService {
       }),
     );
 
-    this.appendSessionEvent(readySession.id, 'session_ready_to_start', {
+    await this.appendSessionEvent(readySession.id, 'session_ready_to_start', {
       requestId: request.id,
     });
   }
 
-  private transitionSession(session: ExamSession, targetStatus: ExamSession['status']): ExamSession {
+  private async transitionSession(
+    session: ExamSession,
+    targetStatus: ExamSession['status'],
+  ): Promise<ExamSession> {
     if (!canTransitionSession(session.status, targetStatus)) {
       throw new ConflictException(
         `Cannot transition session from '${session.status}' to '${targetStatus}'.`,
@@ -583,7 +621,7 @@ export class RequestSessionService {
     );
   }
 
-  private markRequestPaymentSatisfied(request: AssessmentRequest): AssessmentRequest {
+  private async markRequestPaymentSatisfied(request: AssessmentRequest): Promise<AssessmentRequest> {
     let updatedRequest = request;
     const now = new Date();
 
@@ -591,7 +629,7 @@ export class RequestSessionService {
       updatedRequest.status === AssessmentRequestStatus.AWAITING_PAYMENT &&
       canTransitionRequest(updatedRequest.status, AssessmentRequestStatus.PAYMENT_PENDING)
     ) {
-      updatedRequest = this.repository.saveRequest(
+      updatedRequest = await this.repository.saveRequest(
         AssessmentRequestSchema.parse({
           ...updatedRequest,
           status: AssessmentRequestStatus.PAYMENT_PENDING,
@@ -605,7 +643,7 @@ export class RequestSessionService {
       updatedRequest.status === AssessmentRequestStatus.PAYMENT_PENDING &&
       canTransitionRequest(updatedRequest.status, AssessmentRequestStatus.PAYMENT_CONFIRMED)
     ) {
-      updatedRequest = this.repository.saveRequest(
+      updatedRequest = await this.repository.saveRequest(
         AssessmentRequestSchema.parse({
           ...updatedRequest,
           status: AssessmentRequestStatus.PAYMENT_CONFIRMED,
@@ -619,7 +657,7 @@ export class RequestSessionService {
       updatedRequest.status === AssessmentRequestStatus.PAYMENT_CONFIRMED &&
       canTransitionRequest(updatedRequest.status, AssessmentRequestStatus.READY_FOR_ADMIN_REVIEW)
     ) {
-      updatedRequest = this.repository.saveRequest(
+      updatedRequest = await this.repository.saveRequest(
         AssessmentRequestSchema.parse({
           ...updatedRequest,
           status: AssessmentRequestStatus.READY_FOR_ADMIN_REVIEW,
@@ -644,12 +682,12 @@ export class RequestSessionService {
     return updatedRequest;
   }
 
-  private toSessionState(
+  private async toSessionState(
     request: AssessmentRequest,
     session: ExamSession,
     answers: SessionAnswer[],
-  ): RequestSessionState {
-    const frozenVersions = this.repository.getFrozenVersionsForSession(session.id);
+  ): Promise<RequestSessionState> {
+    const frozenVersions = await this.repository.getFrozenVersionsForSession(session.id);
     if (frozenVersions === null) {
       throw new NotFoundException(`Frozen version refs for session '${session.id}' were not found.`);
     }
@@ -690,12 +728,12 @@ export class RequestSessionService {
     return Math.round(this.computeCompletionPercentage(answers));
   }
 
-  private appendSessionEvent(
+  private async appendSessionEvent(
     sessionId: string,
     eventType: string,
     payload: Record<string, unknown>,
-  ): void {
-    this.repository.appendSessionEvent({
+  ): Promise<void> {
+    await this.repository.appendSessionEvent({
       id: randomUUID(),
       examSessionId: sessionId,
       eventType,

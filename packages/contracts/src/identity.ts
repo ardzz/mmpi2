@@ -115,3 +115,28 @@ export const SessionUserSchema = z.object({
 });
 
 export type SessionUser = z.infer<typeof SessionUserSchema>;
+
+// ---------------------------------------------------------------------------
+// Admin user-management read model
+// ---------------------------------------------------------------------------
+
+export const AdminUserDirectoryItemSchema = z.object({
+  id: z.string().uuid(),
+  email: z.string().email(),
+  fullName: z.string().min(1).max(200),
+  accountStatus: AccountStatusSchema,
+  roles: z.array(UserRoleSchema).min(1),
+  isProfileComplete: z.boolean().nullable(),
+  doctorLicenseNumber: z.string().nullable(),
+  doctorSpecialty: z.string().nullable(),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
+});
+
+export type AdminUserDirectoryItem = z.infer<typeof AdminUserDirectoryItemSchema>;
+
+export const UpdateUserRolesSchema = z.object({
+  roles: z.array(UserRoleSchema).min(1),
+});
+
+export type UpdateUserRolesDto = z.infer<typeof UpdateUserRolesSchema>;

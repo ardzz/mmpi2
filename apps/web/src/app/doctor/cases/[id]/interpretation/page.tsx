@@ -1,6 +1,52 @@
 import { Save, AlertCircle } from 'lucide-react';
+import { fetchApiAsDoctor } from '../../../../../lib/api-client';
+import type { SaveDraftReportDto } from '@mmpi2/contracts';
+import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
 
-export default function InterpretationPage() {
+interface ReportAuthoringStateResponse {
+  report: {
+    interpretationSummary: string | null;
+    narrative: string | null;
+    supplementalObservations: Record<string, unknown> | null;
+  } | null;
+}
+
+interface InterpretationPageProps {
+  params: Promise<{ id: string }>;
+}
+
+export default async function InterpretationPage({ params }: InterpretationPageProps) {
+  const { id } = await params;
+
+  let reportState: ReportAuthoringStateResponse | null = null;
+  try {
+    reportState = await fetchApiAsDoctor<ReportAuthoringStateResponse>(`/workflow/sessions/${id}/report`);
+  } catch (error) {
+    console.error('Failed to load doctor report state:', error);
+  }
+
+  async function saveDraft(formData: FormData) {
+    'use server';
+
+    const payload: SaveDraftReportDto = {
+      interpretationSummary: ((formData.get('validitySummary') as string | null) ?? '').trim() || undefined,
+      narrative: ((formData.get('clinicalFindings') as string | null) ?? '').trim() || undefined,
+      supplementalObservations: ((formData.get('diagnosticImpressions') as string | null) ?? '').trim()
+        ? { conclusion: (formData.get('diagnosticImpressions') as string).trim() }
+        : undefined,
+    };
+
+    await fetchApiAsDoctor(`/workflow/sessions/${id}/report/draft`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    });
+
+    revalidatePath(`/doctor/cases/${id}/interpretation`);
+    revalidatePath(`/doctor/cases/${id}/finalize`);
+    redirect(`/doctor/cases/${id}/finalize`);
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-end mb-6">
@@ -8,13 +54,13 @@ export default function InterpretationPage() {
           <h2 className="text-2xl font-display font-bold text-[var(--color-primary)]">Narrative Interpretation</h2>
           <p className="text-[var(--color-on-surface-variant)] mt-1">Draft structured findings and clinical summary.</p>
         </div>
-        <button type="button" className="hidden md:flex items-center gap-2 px-4 py-2 bg-[var(--color-surface-lowest)] border border-[var(--color-outline-variant)]/30 rounded-[var(--radius-md)] text-sm font-medium hover:bg-[var(--color-surface-low)] transition-colors shadow-sm">
+        <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-[var(--color-surface-lowest)] border border-[var(--color-outline-variant)]/30 rounded-[var(--radius-md)] text-sm font-medium text-[var(--color-on-surface-variant)] shadow-sm">
           <Save className="w-4 h-4 text-[var(--color-primary)]" />
-          Save Draft
-        </button>
+          Drafts save through the report API
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
+      <form action={saveDraft} className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8">
         
         {/* Editor Area */}
         <div className="lg:col-span-2 space-y-6">
@@ -25,10 +71,11 @@ export default function InterpretationPage() {
               <span className="text-xs font-medium px-2 py-1 bg-green-50 text-green-700 rounded-full">Valid</span>
             </div>
             <textarea 
+              name="validitySummary"
               rows={4}
               placeholder="Summarize validity scale findings (L, F, K) and overall profile interpretability..."
               className="w-full resize-y p-4 bg-[var(--color-surface)] border border-[var(--color-outline-variant)]/30 rounded-lg text-sm text-[var(--color-on-surface)] focus:outline-none focus:ring-2 focus:ring-[var(--color-action)]/50 focus:border-[var(--color-action)] transition-all min-h-[100px]"
-              defaultValue="The validity profile indicates a cooperative and open approach to the assessment. The patient responded to all items and showed no evidence of significant defensive responding (L=45) or symptom exaggeration (F=68)."
+              defaultValue={reportState?.report?.interpretationSummary ?? ''}
             />
           </div>
 
@@ -39,10 +86,11 @@ export default function InterpretationPage() {
               <p className="text-xs text-[var(--color-on-surface-variant)] mt-1">Address primary elevations and profile code type.</p>
             </div>
             <textarea 
+              name="clinicalFindings"
               rows={8}
               placeholder="Detail symptom presentation, personality characteristics, and emotional functioning based on clinical scales..."
               className="w-full resize-y p-4 bg-[var(--color-surface)] border border-[var(--color-outline-variant)]/30 rounded-lg text-sm text-[var(--color-on-surface)] focus:outline-none focus:ring-2 focus:ring-[var(--color-action)]/50 focus:border-[var(--color-action)] transition-all min-h-[200px]"
-              defaultValue="The clinical profile is characterized by moderate elevations on scales 2 (Depression, T=65), 7 (Psychasthenia, T=71), and 0 (Social Introversion, T=68). This 2-7/7-2 code type suggests the patient is currently experiencing significant distress, primarily characterized by anxiety, worry, and depressive symptoms..."
+              defaultValue={reportState?.report?.narrative ?? ''}
             />
           </div>
 
@@ -50,9 +98,11 @@ export default function InterpretationPage() {
           <div className="bg-[var(--color-surface-lowest)] rounded-xl shadow-[var(--shadow-ambient)] p-6 md:p-8 flex flex-col gap-4">
             <h3 className="font-semibold text-[var(--color-primary)] text-lg mb-2">Diagnostic Impressions & Recommendations</h3>
             <textarea 
+              name="diagnosticImpressions"
               rows={5}
               placeholder="Outline diagnostic considerations and treatment recommendations..."
               className="w-full resize-y p-4 bg-[var(--color-surface)] border border-[var(--color-outline-variant)]/30 rounded-lg text-sm text-[var(--color-on-surface)] focus:outline-none focus:ring-2 focus:ring-[var(--color-action)]/50 focus:border-[var(--color-action)] transition-all min-h-[120px]"
+              defaultValue={typeof reportState?.report?.supplementalObservations?.conclusion === 'string' ? reportState.report.supplementalObservations.conclusion : ''}
             />
           </div>
         </div>
@@ -110,12 +160,12 @@ export default function InterpretationPage() {
             </div>
           </div>
 
-          <button type="button" className="w-full flex md:hidden items-center justify-center gap-2 px-4 py-3 bg-[var(--color-surface-lowest)] border border-[var(--color-outline-variant)]/30 rounded-[var(--radius-md)] text-sm font-medium hover:bg-[var(--color-surface-low)] transition-colors shadow-sm">
+          <button type="submit" className="w-full flex md:hidden items-center justify-center gap-2 px-4 py-3 bg-[var(--color-surface-lowest)] border border-[var(--color-outline-variant)]/30 rounded-[var(--radius-md)] text-sm font-medium hover:bg-[var(--color-surface-low)] transition-colors shadow-sm">
             <Save className="w-4 h-4 text-[var(--color-primary)]" />
             Save Draft
           </button>
         </div>
-      </div>
+      </form>
     </div>
   );
 }

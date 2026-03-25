@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ProfileModule } from '../profile/profile.module';
 import { RequestSessionModule } from '../request-session/request-session.module';
-import { InMemoryScoringRepository } from './in-memory-scoring.repository';
+import { PrismaScoringRepository } from './prisma-scoring.repository';
 import { ScoringController } from './scoring.controller';
 import { ScoringRepository } from './scoring.repository';
 import { ScoringService } from './scoring.service';
@@ -10,10 +10,10 @@ import { ScoringService } from './scoring.service';
   imports: [ProfileModule, RequestSessionModule],
   controllers: [ScoringController],
   providers: [
-    InMemoryScoringRepository,
+    PrismaScoringRepository,
     {
       provide: ScoringRepository,
-      useExisting: InMemoryScoringRepository,
+      useExisting: PrismaScoringRepository,
     },
     ScoringService,
   ],

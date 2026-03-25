@@ -57,8 +57,8 @@ function setupServices(billingMode: BillingModeType = BillingMode.DISABLED) {
   };
 }
 
-function createCompletePatientProfile(profileService: ProfileService, userId: string): void {
-  profileService.upsertPatientProfile(userId, {
+async function createCompletePatientProfile(profileService: ProfileService, userId: string): Promise<void> {
+  await profileService.upsertPatientProfile(userId, {
     fullName: 'Patient One',
     governmentId: 'ID-12345',
     dateOfBirth: new Date('1990-05-10'),
@@ -72,32 +72,32 @@ function createCompletePatientProfile(profileService: ProfileService, userId: st
   });
 }
 
-function createDoctorProfile(profileService: ProfileService, userId: string): void {
-  profileService.upsertDoctorProfile(userId, {
+async function createDoctorProfile(profileService: ProfileService, userId: string): Promise<void> {
+  await profileService.upsertDoctorProfile(userId, {
     fullName: 'Dr. Tester',
     licenseNumber: 'PSY-9001',
     specialty: 'Clinical Psychology',
   });
 }
 
-function createSubmittedSession(
+async function createSubmittedSession(
   requestSessionService: RequestSessionService,
   profileService: ProfileService,
-): string {
-  createCompletePatientProfile(profileService, PATIENT_USER_ID);
-  createDoctorProfile(profileService, DOCTOR_USER_ID);
+): Promise<string> {
+  await createCompletePatientProfile(profileService, PATIENT_USER_ID);
+  await createDoctorProfile(profileService, DOCTOR_USER_ID);
 
-  const createdRequest = requestSessionService.createAssessmentRequest(PATIENT_USER_ID, {
+  const createdRequest = await requestSessionService.createAssessmentRequest(PATIENT_USER_ID, {
     purpose: 'Scoring workflow test',
   });
 
-  requestSessionService.assignDoctor(createdRequest.id, {
+  await requestSessionService.assignDoctor(createdRequest.id, {
     doctorUserId: DOCTOR_USER_ID,
   });
-  requestSessionService.reviewRequest(createdRequest.id, {
+  await requestSessionService.reviewRequest(createdRequest.id, {
     decision: 'approved',
   });
-  requestSessionService.startSessionForPatient(PATIENT_USER_ID, createdRequest.id);
+  await requestSessionService.startSessionForPatient(PATIENT_USER_ID, createdRequest.id);
 
   const answerInputs = Array.from({ length: 333 }, (_, index) => ({
     questionNumber: index + 1,
@@ -105,22 +105,22 @@ function createSubmittedSession(
   }));
 
   for (let index = 0; index < answerInputs.length; index += 50) {
-    requestSessionService.saveAnswersForPatient(PATIENT_USER_ID, createdRequest.id, {
+    await requestSessionService.saveAnswersForPatient(PATIENT_USER_ID, createdRequest.id, {
       answers: answerInputs.slice(index, index + 50),
     });
   }
 
-  const submittedState = requestSessionService.submitSessionForPatient(PATIENT_USER_ID, createdRequest.id);
+  const submittedState = await requestSessionService.submitSessionForPatient(PATIENT_USER_ID, createdRequest.id);
   expect(submittedState.session.status).toBe(ExamSessionStatus.SUBMITTED);
   return submittedState.session.id;
 }
 
 describe('ScoringService', () => {
-  it('scores a submitted session, persists immutable result sets, and exposes doctor retrieval view', () => {
+  it('scores a submitted session, persists immutable result sets, and exposes doctor retrieval view', async () => {
     const { requestSessionService, scoringService, profileService } = setupServices(BillingMode.DISABLED);
-    const sessionId = createSubmittedSession(requestSessionService, profileService);
+    const sessionId = await createSubmittedSession(requestSessionService, profileService);
 
-    const scoredView = scoringService.runScoringForSubmittedSession(sessionId);
+    const scoredView = await scoringService.runScoringForSubmittedSession(sessionId);
 
     expect(scoredView.resultSet.status).toBe('completed');
     expect(scoredView.resultSet.examSessionId).toBe(sessionId);
@@ -130,37 +130,37 @@ describe('ScoringService', () => {
       scoredView.session.status,
     );
 
-    const doctorView = scoringService.getLatestScoreForDoctor(sessionId, DOCTOR_USER_ID);
+    const doctorView = await scoringService.getLatestScoreForDoctor(sessionId, DOCTOR_USER_ID);
     expect(doctorView.resultSet.id).toBe(scoredView.resultSet.id);
 
     doctorView.resultSet.engineVersion = 'tampered';
-    const reloadedDoctorView = scoringService.getLatestScoreForDoctor(sessionId, DOCTOR_USER_ID);
+    const reloadedDoctorView = await scoringService.getLatestScoreForDoctor(sessionId, DOCTOR_USER_ID);
     expect(reloadedDoctorView.resultSet.engineVersion).toBe('0.0.1');
   });
 
-  it('rejects scoring trigger unless session is submitted', () => {
+  it('rejects scoring trigger unless session is submitted', async () => {
     const { requestSessionService, scoringService, profileService } = setupServices(BillingMode.DISABLED);
-    createCompletePatientProfile(profileService, PATIENT_USER_ID);
-    createDoctorProfile(profileService, DOCTOR_USER_ID);
+    await createCompletePatientProfile(profileService, PATIENT_USER_ID);
+    await createDoctorProfile(profileService, DOCTOR_USER_ID);
 
-    const createdRequest = requestSessionService.createAssessmentRequest(PATIENT_USER_ID, {
+    const createdRequest = await requestSessionService.createAssessmentRequest(PATIENT_USER_ID, {
       purpose: 'Illegal trigger case',
     });
 
-    requestSessionService.assignDoctor(createdRequest.id, {
+    await requestSessionService.assignDoctor(createdRequest.id, {
       doctorUserId: DOCTOR_USER_ID,
     });
-    requestSessionService.reviewRequest(createdRequest.id, {
+    await requestSessionService.reviewRequest(createdRequest.id, {
       decision: 'approved',
     });
 
-    const startedState = requestSessionService.startSessionForPatient(PATIENT_USER_ID, createdRequest.id);
+    const startedState = await requestSessionService.startSessionForPatient(PATIENT_USER_ID, createdRequest.id);
     expect(startedState.session.status).toBe(ExamSessionStatus.IN_PROGRESS);
 
-    expect(() => scoringService.runScoringForSubmittedSession(startedState.session.id)).toThrow(
+    await expect(scoringService.runScoringForSubmittedSession(startedState.session.id)).rejects.toThrow(
       ConflictException,
     );
-    expect(() => scoringService.getLatestScoreForDoctor(startedState.session.id, DOCTOR_USER_ID)).toThrow(
+    await expect(scoringService.getLatestScoreForDoctor(startedState.session.id, DOCTOR_USER_ID)).rejects.toThrow(
       NotFoundException,
     );
   });

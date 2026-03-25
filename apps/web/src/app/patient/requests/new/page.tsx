@@ -1,7 +1,33 @@
 import Link from 'next/link';
 import { ArrowLeft, ArrowRight, ShieldCheck, FileText } from 'lucide-react';
+import { fetchApi } from '../../../../lib/api-client';
+import { redirect } from 'next/navigation';
+import type { CreateAssessmentRequestDto, AssessmentRequest } from '@mmpi2/contracts';
 
 export default function NewRequestPage() {
+  async function createRequest(formData: FormData) {
+    'use server';
+    
+    const payload: CreateAssessmentRequestDto = {
+      purpose: ((formData.get('reason') as string | null) ?? '').trim() || undefined,
+    };
+
+    let request: AssessmentRequest;
+    try {
+      request = await fetchApi<AssessmentRequest>('/workflow/requests', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    } catch (error) {
+      console.error('Failed to create request:', error);
+      // In a real app we'd show an error state, for now redirect back
+      redirect('/patient');
+    }
+    
+    // Redirect to payment with the request ID
+    redirect(`/patient/payment?requestId=${request.id}`);
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
@@ -25,7 +51,7 @@ export default function NewRequestPage() {
               Assessment Details
             </h2>
             
-            <form className="space-y-6">
+            <form action={createRequest} className="space-y-6">
               <div>
                 <label htmlFor="reason" className="block text-sm font-medium text-[var(--color-on-surface)]">
                   Primary reason for assessment
@@ -38,12 +64,13 @@ export default function NewRequestPage() {
                     id="reason"
                     name="reason"
                     className="block w-full appearance-none rounded-[var(--radius-md)] bg-[var(--color-surface)] px-3 py-2.5 text-[var(--color-on-surface)] border border-[var(--color-outline-variant)]/15 focus:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary)]/30 sm:text-sm"
+                    required
                   >
                     <option value="">Select a reason</option>
-                    <option value="clinical">Clinical Evaluation</option>
-                    <option value="employment">Pre-employment Screening</option>
-                    <option value="legal">Legal / Court Ordered</option>
-                    <option value="other">Other</option>
+                    <option value="Clinical Evaluation">Clinical Evaluation</option>
+                    <option value="Pre-employment Screening">Pre-employment Screening</option>
+                    <option value="Legal / Court Ordered">Legal / Court Ordered</option>
+                    <option value="Other">Other</option>
                   </select>
                 </div>
               </div>
@@ -74,12 +101,12 @@ export default function NewRequestPage() {
               </div>
 
               <div className="pt-6 border-t border-[var(--color-outline-variant)]/15 flex justify-end">
-                <Link 
-                  href="/patient/payment"
+                <button 
+                  type="submit"
                   className="inline-flex items-center gap-2 rounded-[var(--radius-md)] bg-gradient-to-br from-[var(--color-primary)] to-[var(--color-primary-container)] px-6 py-2.5 text-sm font-semibold text-white shadow-[var(--shadow-ambient)] hover:from-[var(--color-primary-container)] hover:to-[var(--color-primary)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-primary)] transition-all"
                 >
                   Continue to Payment <ArrowRight className="w-4 h-4" />
-                </Link>
+                </button>
               </div>
             </form>
           </div>

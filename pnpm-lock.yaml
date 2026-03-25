@@ -35,6 +35,9 @@ importers:
       '@mmpi2/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@mmpi2/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@mmpi2/scoring':
         specifier: workspace:*
         version: link:../../packages/scoring
@@ -81,6 +84,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@mmpi2/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       lucide-react:
         specifier: ^0.473.0
         version: 0.473.0(react@19.2.4)
@@ -133,6 +139,9 @@ importers:
 
   apps/worker:
     dependencies:
+      '@mmpi2/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@mmpi2/reports':
         specifier: workspace:*
         version: link:../../packages/reports

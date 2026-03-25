@@ -11,6 +11,7 @@
 export * from './assessment-request.js';
 export * from './exam-session.js';
 export * from './clinical-report.js';
+export * from './audit.js';
 export * from './identity.js';
 export * from './payment.js';
 export * from './state-machines.js';

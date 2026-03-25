@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { PaymentModule } from '../payment/payment.module';
 import { ProfileModule } from '../profile/profile.module';
-import { InMemoryRequestSessionRepository } from './in-memory-request-session.repository';
+import { PrismaRequestSessionRepository } from './prisma-request-session.repository';
 import { RequestSessionController } from './request-session.controller';
 import { RequestSessionRepository } from './request-session.repository';
 import { RequestSessionService } from './request-session.service';
@@ -10,10 +10,10 @@ import { RequestSessionService } from './request-session.service';
   imports: [ProfileModule, PaymentModule],
   controllers: [RequestSessionController],
   providers: [
-    InMemoryRequestSessionRepository,
+    PrismaRequestSessionRepository,
     {
       provide: RequestSessionRepository,
-      useExisting: InMemoryRequestSessionRepository,
+      useExisting: PrismaRequestSessionRepository,
     },
     RequestSessionService,
   ],

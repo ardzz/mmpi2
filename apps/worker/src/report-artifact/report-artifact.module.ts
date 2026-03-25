@@ -7,6 +7,10 @@ import { ReportArtifactJobQueue } from './report-artifact-job-queue';
 import { ReportArtifactJobRunner } from './report-artifact-job-runner';
 import { ReportArtifactService } from './report-artifact.service';
 import {
+  PrismaReportDocumentRegistry,
+  ReportDocumentRegistry,
+} from './report-document-registry';
+import {
   ReactPdfReportRenderer,
   ReportPdfRenderer,
 } from './report-pdf-renderer';
@@ -28,13 +32,19 @@ import {
       provide: ReportPdfRenderer,
       useExisting: ReactPdfReportRenderer,
     },
+    PrismaReportDocumentRegistry,
+    {
+      provide: ReportDocumentRegistry,
+      useExisting: PrismaReportDocumentRegistry,
+    },
     {
       provide: ReportArtifactJobProcessor,
       useFactory: (
         artifactStorage: ArtifactStorage,
         reportPdfRenderer: ReportPdfRenderer,
-      ) => new ReportArtifactJobProcessor(artifactStorage, reportPdfRenderer),
-      inject: [ArtifactStorage, ReportPdfRenderer],
+        reportDocumentRegistry: ReportDocumentRegistry,
+      ) => new ReportArtifactJobProcessor(artifactStorage, reportPdfRenderer, reportDocumentRegistry),
+      inject: [ArtifactStorage, ReportPdfRenderer, ReportDocumentRegistry],
     },
     {
       provide: ReportArtifactJobRunner,
@@ -57,6 +67,7 @@ import {
     ArtifactStorage,
     ReportArtifactJobQueue,
     ReportPdfRenderer,
+    ReportDocumentRegistry,
     ReportArtifactJobProcessor,
     ReportArtifactJobRunner,
     ReportArtifactService,

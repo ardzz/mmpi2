@@ -1,5 +1,7 @@
 import type { VersionTriplet } from './types.js';
 
+export const MMPI2_ASSESSMENT_TYPE_ID = '00000000-0000-0000-0000-000000000010';
+
 /**
  * The canonical MMPI-2 1989 version triplet.
  * Used to seed the database and as the default active version.

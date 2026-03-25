@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import {
+  AssessmentRequestStatusSchema,
   ExamSessionStatusSchema,
   ScoreResultSetStatusSchema,
   GenderSchema,
@@ -89,6 +90,41 @@ export const SessionProgressSchema = z.object({
 });
 
 export type SessionProgress = z.infer<typeof SessionProgressSchema>;
+
+// ---------------------------------------------------------------------------
+// Doctor queue read model — API/web shared response shape
+// ---------------------------------------------------------------------------
+
+export const DoctorCaseValidityLabel = {
+  PENDING: 'pending',
+  VALID: 'valid',
+  REVIEW_RECOMMENDED: 'review_recommended',
+} as const;
+
+export type DoctorCaseValidityLabel =
+  (typeof DoctorCaseValidityLabel)[keyof typeof DoctorCaseValidityLabel];
+
+export const DoctorCaseValidityLabelSchema = z.enum([
+  'pending',
+  'valid',
+  'review_recommended',
+]);
+
+export const DoctorCaseQueueItemSchema = z.object({
+  sessionId: z.string().uuid(),
+  assessmentRequestId: z.string().uuid(),
+  patientUserId: z.string().uuid(),
+  patientFullName: z.string().min(1),
+  requestStatus: AssessmentRequestStatusSchema,
+  sessionStatus: ExamSessionStatusSchema,
+  purpose: z.string().nullable(),
+  submittedAt: z.coerce.date().nullable(),
+  latestScoreStatus: ScoreResultSetStatusSchema.nullable(),
+  validityLabel: DoctorCaseValidityLabelSchema,
+  validitySummary: z.string().nullable(),
+});
+
+export type DoctorCaseQueueItem = z.infer<typeof DoctorCaseQueueItemSchema>;
 
 // ---------------------------------------------------------------------------
 // Session Event record — blueprint 7.3: transitions logged in session-event table

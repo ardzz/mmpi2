@@ -1,9 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import {
+  type UserRole,
+  type AdminUserDirectoryItem,
   DoctorProfileSchema,
   type DoctorProfile,
   PatientProfileSchema,
   type PatientProfile,
+  type UpdateUserRolesDto,
   type UpsertDoctorProfileDto,
   type UpsertPatientProfileDto,
 } from '@mmpi2/contracts';
@@ -25,8 +28,8 @@ const REQUIRED_DEMOGRAPHIC_FIELDS = [
 export class ProfileService {
   constructor(@Inject(ProfileRepository) private readonly profileRepository: ProfileRepository) {}
 
-  getPatientProfileByUserId(userId: string): PatientProfile {
-    const profile = this.profileRepository.findPatientByUserId(userId);
+  async getPatientProfileByUserId(userId: string): Promise<PatientProfile> {
+    const profile = await this.profileRepository.findPatientByUserId(userId);
     if (profile === null) {
       throw new NotFoundException(`Patient profile for user '${userId}' was not found.`);
     }
@@ -34,8 +37,8 @@ export class ProfileService {
     return PatientProfileSchema.parse(profile);
   }
 
-  upsertPatientProfile(userId: string, payload: UpsertPatientProfileDto): PatientProfile {
-    const existingProfile = this.profileRepository.findPatientByUserId(userId);
+  async upsertPatientProfile(userId: string, payload: UpsertPatientProfileDto): Promise<PatientProfile> {
+    const existingProfile = await this.profileRepository.findPatientByUserId(userId);
     const now = new Date();
 
     const profile: PatientProfile = {
@@ -55,8 +58,8 @@ export class ProfileService {
     return this.profileRepository.savePatientProfile(validatedProfile);
   }
 
-  getDoctorProfileByUserId(userId: string): DoctorProfile {
-    const profile = this.profileRepository.findDoctorByUserId(userId);
+  async getDoctorProfileByUserId(userId: string): Promise<DoctorProfile> {
+    const profile = await this.profileRepository.findDoctorByUserId(userId);
     if (profile === null) {
       throw new NotFoundException(`Doctor profile for user '${userId}' was not found.`);
     }
@@ -64,8 +67,8 @@ export class ProfileService {
     return DoctorProfileSchema.parse(profile);
   }
 
-  upsertDoctorProfile(userId: string, payload: UpsertDoctorProfileDto): DoctorProfile {
-    const existingProfile = this.profileRepository.findDoctorByUserId(userId);
+  async upsertDoctorProfile(userId: string, payload: UpsertDoctorProfileDto): Promise<DoctorProfile> {
+    const existingProfile = await this.profileRepository.findDoctorByUserId(userId);
     const now = new Date();
 
     const profile: DoctorProfile = {
@@ -81,6 +84,14 @@ export class ProfileService {
 
     const validatedProfile = DoctorProfileSchema.parse(profile);
     return this.profileRepository.saveDoctorProfile(validatedProfile);
+  }
+
+  async listAdminUserDirectory(query?: { q?: string; role?: UserRole | 'all' }): Promise<AdminUserDirectoryItem[]> {
+    return this.profileRepository.listAdminUserDirectory(query);
+  }
+
+  async updateUserRoles(userId: string, payload: UpdateUserRolesDto): Promise<AdminUserDirectoryItem> {
+    return this.profileRepository.updateUserRoles(userId, payload.roles);
   }
 
   isPatientProfileComplete(payload: UpsertPatientProfileDto): boolean {
